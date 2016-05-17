@@ -131,13 +131,6 @@ def next_state(workflow_type: str, rec_id: str, criteria: str, userid: str, note
                 StateWorkflow.next_state_id != None)
             ))).first()
 
-        #
-        # initial_state = session.query(StateDefinition).filter(and_(
-        #     and_(StateDefinition.workflow_type == workflow_type, StateDefinition.next_state_id != None),
-        #     StateDefinition.state_id.notin_(
-        #         session.query(StateDefinition.next_state_id).filter(and_(
-        #             StateDefinition.workflow_type == workflow_type, StateDefinition.next_state_id != None))))).first()
-
         if initial_state is None:
             raise NoInitialStateDefinedError()
 
