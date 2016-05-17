@@ -27,13 +27,18 @@ class TestWorkflowState(unittest.TestCase):
 
     def _initialize_tables(self):
         self.connection.execute(
-            'insert into STATE_DEFINITION values(1,"TASK_APPROVAL", "SUBMITTED", 2)')
+            'insert into STATE_DEFINITION values(1,"TASK_APPROVAL", "SUBMITTED", null)')
         self.connection.execute(
-            'insert into STATE_DEFINITION values(2,"TASK_APPROVAL", "VALIDATED", 3)')
+            'insert into STATE_DEFINITION values(2,"TASK_APPROVAL", "VALIDATED", null)')
         self.connection.execute(
-            'insert into STATE_DEFINITION values(3,"TASK_APPROVAL", "APPROVED", 4)')
+            'insert into STATE_DEFINITION values(3,"TASK_APPROVAL", "APPROVED", null)')
         self.connection.execute(
             'insert into STATE_DEFINITION values(4,"TASK_APPROVAL", "COMPLETED",null)')
+
+        self.connection.execute('insert into STATE_WORKFLOW values(1,2)')
+        self.connection.execute('insert into STATE_WORKFLOW values(2,3)')
+        self.connection.execute('insert into STATE_WORKFLOW values(3,4)')
+        self.connection.execute('insert into STATE_WORKFLOW values(4,null)')
 
         self.connection.execute(
             'insert into STATE_HISTORY values("1", 1, "submitted for approval", "USER1", "2016-01-01 00:00:00")')
@@ -42,43 +47,43 @@ class TestWorkflowState(unittest.TestCase):
 
     def test_promote(self):
         self._initialize_tables()
-        sm = statemanager_api.StateManager(state_type='TASK_APPROVAL')
+        sm = statemanager_api.StateManager(workflow_type='TASK_APPROVAL')
         sm_output = sm.next(rec_id='1', userid='USER3', notes='approved to got the next stage')
         self.assertEqual(sm_output.rec_id, '1')
-        self.assertEqual(sm_output.state_type, 'TASK_APPROVAL')
+        self.assertEqual(sm_output.workflow_type, 'TASK_APPROVAL')
         self.assertEqual(sm_output.state_id, 3)
         self.assertEqual(sm_output.state_name, 'APPROVED')
         self.assertEqual(sm_output.notes, 'approved to got the next stage')
 
     def test_promote_initial(self):
         self._initialize_tables()
-        sm = statemanager_api.StateManager(state_type='TASK_APPROVAL')
+        sm = statemanager_api.StateManager(workflow_type='TASK_APPROVAL')
         sm_output = sm.next(rec_id='2', userid='USER3', notes='submit my task for initial state')
         self.assertEqual(sm_output.rec_id, '2')
-        self.assertEqual(sm_output.state_type, 'TASK_APPROVAL')
+        self.assertEqual(sm_output.workflow_type, 'TASK_APPROVAL')
         self.assertEqual(sm_output.state_id, 1)
         self.assertEqual(sm_output.state_name, 'SUBMITTED')
         self.assertEqual(sm_output.notes, 'submit my task for initial state')
 
     def test_initial_and_promote(self):
         self._initialize_tables()
-        sm = statemanager_api.StateManager(state_type='TASK_APPROVAL')
+        sm = statemanager_api.StateManager(workflow_type='TASK_APPROVAL')
         sm_output = sm.next(rec_id='2', userid='USER3', notes='submit my task for initial state')
         self.assertEqual(sm_output.rec_id, '2')
-        self.assertEqual(sm_output.state_type, 'TASK_APPROVAL')
+        self.assertEqual(sm_output.workflow_type, 'TASK_APPROVAL')
         self.assertEqual(sm_output.state_id, 1)
         self.assertEqual(sm_output.state_name, 'SUBMITTED')
         self.assertEqual(sm_output.notes, 'submit my task for initial state')
         sm_output = sm.next(rec_id='2', userid='USER4', notes='validate task')
         self.assertEqual(sm_output.rec_id, '2')
-        self.assertEqual(sm_output.state_type, 'TASK_APPROVAL')
+        self.assertEqual(sm_output.workflow_type, 'TASK_APPROVAL')
         self.assertEqual(sm_output.state_id, 2)
         self.assertEqual(sm_output.state_name, 'VALIDATED')
         self.assertEqual(sm_output.notes, 'validate task')
 
     def test_no_state(self):
         self._initialize_tables()
-        sm = statemanager_api.StateManager(state_type='TASK_MANAGE')
+        sm = statemanager_api.StateManager(workflow_type='TASK_MANAGE')
 
         def caller():
             sm.next(rec_id='3', userid='USER3', notes='submit my task for initial state')
@@ -87,7 +92,7 @@ class TestWorkflowState(unittest.TestCase):
 
     def test_final_state(self):
         self._initialize_tables()
-        sm = statemanager_api.StateManager(state_type='TASK_APPROVAL')
+        sm = statemanager_api.StateManager(workflow_type='TASK_APPROVAL')
         sm.next(rec_id='1', userid='USER3', notes='approved to got the next stage')
         sm.next(rec_id='1', userid='USER3', notes='approved to got the next stage')
 

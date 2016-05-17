@@ -27,13 +27,18 @@ class TestWorkflowState(unittest.TestCase):
 
     def _initialize_tables(self):
         self.connection.execute(
-            'insert into STATE_DEFINITION values(1,"TASK_APPROVAL", "SUBMITTED",2)')
+            'insert into STATE_DEFINITION values(1,"TASK_APPROVAL", "SUBMITTED",null)')
         self.connection.execute(
-            'insert into STATE_DEFINITION values(2,"TASK_APPROVAL", "VALIDATED",3)')
+            'insert into STATE_DEFINITION values(2,"TASK_APPROVAL", "VALIDATED",null)')
         self.connection.execute(
-            'insert into STATE_DEFINITION values(3,"TASK_APPROVAL", "APPROVED",4)')
+            'insert into STATE_DEFINITION values(3,"TASK_APPROVAL", "APPROVED",null)')
         self.connection.execute(
             'insert into STATE_DEFINITION values(4,"TASK_APPROVAL", "COMPLETED",null)')
+
+        self.connection.execute('insert into STATE_WORKFLOW values(1,2)')
+        self.connection.execute('insert into STATE_WORKFLOW values(2,3)')
+        self.connection.execute('insert into STATE_WORKFLOW values(3,4)')
+        self.connection.execute('insert into STATE_WORKFLOW values(4,null)')
 
         self.connection.execute(
             'insert into STATE_HISTORY values("1", 1, "submitted for approval", "USER1", "2016-01-01 00:00:00")')
@@ -42,7 +47,7 @@ class TestWorkflowState(unittest.TestCase):
 
     def test_no_rec(self):
         self._initialize_tables()
-        sm = statemanager_api.StateManager(state_type='TASK_APPROVAL')
+        sm = statemanager_api.StateManager(workflow_type='TASK_APPROVAL')
 
         def caller():
             sm.previous(rec_id='2', userid='USER3', notes='disapprove to go ahead')
@@ -51,7 +56,7 @@ class TestWorkflowState(unittest.TestCase):
 
     def test_no_state_definition(self):
         self._initialize_tables()
-        sm = statemanager_api.StateManager(state_type='TASK_MANAGE')
+        sm = statemanager_api.StateManager(workflow_type='TASK_MANAGE')
 
         def caller():
             sm.previous(rec_id='2', userid='USER3', notes='disapprove to go ahead')
@@ -60,17 +65,17 @@ class TestWorkflowState(unittest.TestCase):
 
     def test_demote(self):
         self._initialize_tables()
-        sm = statemanager_api.StateManager(state_type='TASK_APPROVAL')
+        sm = statemanager_api.StateManager(workflow_type='TASK_APPROVAL')
         sm_output = sm.previous(rec_id='1', userid='USER3', notes='disapprove to go ahead')
         self.assertEqual(sm_output.rec_id, '1')
-        self.assertEqual(sm_output.state_type, 'TASK_APPROVAL')
+        self.assertEqual(sm_output.workflow_type, 'TASK_APPROVAL')
         self.assertEqual(sm_output.state_id, 1)
         self.assertEqual(sm_output.state_name, 'SUBMITTED')
         self.assertEqual(sm_output.notes, 'disapprove to go ahead')
 
     def test_demote_failure(self):
         self._initialize_tables()
-        sm = statemanager_api.StateManager(state_type='TASK_APPROVAL')
+        sm = statemanager_api.StateManager(workflow_type='TASK_APPROVAL')
         sm.previous(rec_id='1', userid='USER3', notes='disapprove to go ahead')
 
         def caller():
@@ -80,12 +85,12 @@ class TestWorkflowState(unittest.TestCase):
 
     def test_promote_and_demote(self):
         self._initialize_tables()
-        sm = statemanager_api.StateManager(state_type='TASK_APPROVAL')
+        sm = statemanager_api.StateManager(workflow_type='TASK_APPROVAL')
         sm.next(rec_id='1', userid='USER3', notes='approve one more level')
         sm.previous(rec_id='1', userid='USER3', notes='disapprove to go ahead')
         sm_output = sm.previous(rec_id='1', userid='USER3', notes='disapprove to go ahead')
         self.assertEqual(sm_output.rec_id, '1')
-        self.assertEqual(sm_output.state_type, 'TASK_APPROVAL')
+        self.assertEqual(sm_output.workflow_type, 'TASK_APPROVAL')
         self.assertEqual(sm_output.state_id, 1)
         self.assertEqual(sm_output.state_name, 'SUBMITTED')
         self.assertEqual(sm_output.notes, 'disapprove to go ahead')
