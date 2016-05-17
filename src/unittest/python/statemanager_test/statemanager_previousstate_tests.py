@@ -45,7 +45,7 @@ class TestWorkflowState(unittest.TestCase):
         sm = statemanager_api.StateManager(state_type='TASK_APPROVAL')
 
         def caller():
-            sm.demote(rec_id='2', userid='USER3', notes='disapprove to go ahead')
+            sm.previous(rec_id='2', userid='USER3', notes='disapprove to go ahead')
 
         self.assertRaises(NoStateDefinedError, caller)
 
@@ -54,14 +54,14 @@ class TestWorkflowState(unittest.TestCase):
         sm = statemanager_api.StateManager(state_type='TASK_MANAGE')
 
         def caller():
-            sm.demote(rec_id='2', userid='USER3', notes='disapprove to go ahead')
+            sm.previous(rec_id='2', userid='USER3', notes='disapprove to go ahead')
 
         self.assertRaises(NoStateDefinedError, caller)
 
     def test_demote(self):
         self._initialize_tables()
         sm = statemanager_api.StateManager(state_type='TASK_APPROVAL')
-        sm_output = sm.demote(rec_id='1', userid='USER3', notes='disapprove to go ahead')
+        sm_output = sm.previous(rec_id='1', userid='USER3', notes='disapprove to go ahead')
         self.assertEqual(sm_output.rec_id, '1')
         self.assertEqual(sm_output.state_type, 'TASK_APPROVAL')
         self.assertEqual(sm_output.state_id, 1)
@@ -71,19 +71,19 @@ class TestWorkflowState(unittest.TestCase):
     def test_demote_failure(self):
         self._initialize_tables()
         sm = statemanager_api.StateManager(state_type='TASK_APPROVAL')
-        sm.demote(rec_id='1', userid='USER3', notes='disapprove to go ahead')
+        sm.previous(rec_id='1', userid='USER3', notes='disapprove to go ahead')
 
         def caller():
-            sm.demote(rec_id='1', userid='USER3', notes='disapprove to go ahead')
+            sm.previous(rec_id='1', userid='USER3', notes='disapprove to go ahead')
 
         self.assertRaises(NoStateDefinedError, caller)
 
     def test_promote_and_demote(self):
         self._initialize_tables()
         sm = statemanager_api.StateManager(state_type='TASK_APPROVAL')
-        sm.promote(rec_id='1', userid='USER3', notes='approve one more level')
-        sm.demote(rec_id='1', userid='USER3', notes='disapprove to go ahead')
-        sm_output = sm.demote(rec_id='1', userid='USER3', notes='disapprove to go ahead')
+        sm.next(rec_id='1', userid='USER3', notes='approve one more level')
+        sm.previous(rec_id='1', userid='USER3', notes='disapprove to go ahead')
+        sm_output = sm.previous(rec_id='1', userid='USER3', notes='disapprove to go ahead')
         self.assertEqual(sm_output.rec_id, '1')
         self.assertEqual(sm_output.state_type, 'TASK_APPROVAL')
         self.assertEqual(sm_output.state_id, 1)
