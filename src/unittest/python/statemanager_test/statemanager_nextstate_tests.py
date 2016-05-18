@@ -45,7 +45,7 @@ class TestWorkflowState(unittest.TestCase):
         self.connection.execute(
             'insert into STATE_HISTORY values("1", 2, "validated task", "USER2", "2016-01-01 00:05:00")')
 
-    def test_promote(self):
+    def test_next_state(self):
         self._initialize_tables()
         sm = statemanager_api.StateManager(workflow_type='TASK_APPROVAL')
         sm_output = sm.next(rec_id='1', userid='USER3', notes='approved to got the next stage')
@@ -55,7 +55,7 @@ class TestWorkflowState(unittest.TestCase):
         self.assertEqual(sm_output.state_name, 'APPROVED')
         self.assertEqual(sm_output.notes, 'approved to got the next stage')
 
-    def test_promote_initial(self):
+    def test_initial(self):
         self._initialize_tables()
         sm = statemanager_api.StateManager(workflow_type='TASK_APPROVAL')
         sm_output = sm.next(rec_id='2', userid='USER3', notes='submit my task for initial state')
@@ -65,7 +65,7 @@ class TestWorkflowState(unittest.TestCase):
         self.assertEqual(sm_output.state_name, 'SUBMITTED')
         self.assertEqual(sm_output.notes, 'submit my task for initial state')
 
-    def test_initial_and_promote(self):
+    def test_initial_and_next(self):
         self._initialize_tables()
         sm = statemanager_api.StateManager(workflow_type='TASK_APPROVAL')
         sm_output = sm.next(rec_id='2', userid='USER3', notes='submit my task for initial state')

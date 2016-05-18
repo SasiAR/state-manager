@@ -140,25 +140,26 @@ def next_state(workflow_type: str, rec_id: str, criteria: str, userid: str, note
                                  userid=userid,
                                  insert_ts=datetime.now()))
     else:
-        current_state_definitions = session.query(StateDefinition, StateWorkflow).filter(
+        next_state_definitions = session.query(StateDefinition, StateWorkflow).filter(
             and_(StateDefinition.state_id == StateWorkflow.state_id,
-                 and_(StateDefinition.state_id == current_state.state_id,
-                      StateDefinition.workflow_type == workflow_type))).all()
+                 and_(StateDefinition.state_id.in_(session.query(StateWorkflow.next_state_id).filter(
+                     StateWorkflow.state_id == current_state.state_id)),
+                     StateDefinition.workflow_type == workflow_type))).all()
 
         # Is state defined or is it the last state?
-        if not current_state_definitions:
-            raise NoStateDefinedError()
+        if not next_state_definitions:
+            raise NextStateNotDefinedError()
 
-        current_state_definition = current_state_definitions[0]
-        if criteria is not None:
-            current_state_definition = [current for current in current_state_definitions if
-                                        current.StateDefinition.criteria]
+        next_state_definition = next_state_definitions[0]
+        if criteria is not None and next_state_definitions:
+            next_state_definition = next(iter(
+                [next for next in next_state_definitions if next.StateDefinition.criteria == criteria]))
 
-        if current_state_definition is None or current_state_definition.StateWorkflow.next_state_id is None:
+        if next_state_definition is None:
             raise NextStateNotDefinedError()
 
         session.add(StateHistory(rec_id=rec_id,
-                                 state_id=current_state_definition.StateWorkflow.next_state_id,
+                                 state_id=next_state_definition.StateWorkflow.state_id,
                                  notes=notes,
                                  userid=userid,
                                  insert_ts=datetime.now()))

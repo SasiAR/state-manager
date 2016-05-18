@@ -63,7 +63,7 @@ class TestWorkflowState(unittest.TestCase):
 
         self.assertRaises(NoStateDefinedError, caller)
 
-    def test_demote(self):
+    def test_previous(self):
         self._initialize_tables()
         sm = statemanager_api.StateManager(workflow_type='TASK_APPROVAL')
         sm_output = sm.previous(rec_id='1', userid='USER3', notes='disapprove to go ahead')
@@ -73,7 +73,7 @@ class TestWorkflowState(unittest.TestCase):
         self.assertEqual(sm_output.state_name, 'SUBMITTED')
         self.assertEqual(sm_output.notes, 'disapprove to go ahead')
 
-    def test_demote_failure(self):
+    def test_previous_failure(self):
         self._initialize_tables()
         sm = statemanager_api.StateManager(workflow_type='TASK_APPROVAL')
         sm.previous(rec_id='1', userid='USER3', notes='disapprove to go ahead')
@@ -83,7 +83,7 @@ class TestWorkflowState(unittest.TestCase):
 
         self.assertRaises(NoStateDefinedError, caller)
 
-    def test_promote_and_demote(self):
+    def test_next_and_previous(self):
         self._initialize_tables()
         sm = statemanager_api.StateManager(workflow_type='TASK_APPROVAL')
         sm.next(rec_id='1', userid='USER3', notes='approve one more level')

@@ -33,14 +33,74 @@ class TestWorkflowState(unittest.TestCase):
         self.connection.execute(
             'insert into STATE_DEFINITION values(3,"TASK_APPROVAL", "APPROVED", null)')
         self.connection.execute(
-            'insert into STATE_DEFINITION values(4,"TASK_APPROVAL", "COMPLETED",null)')
+            'insert into STATE_DEFINITION values(4,"TASK_APPROVAL", "COMPLETED","COMPLETE")')
+        self.connection.execute(
+            'insert into STATE_DEFINITION values(5,"TASK_APPROVAL", "CLOSED","CLOSE")')
 
         self.connection.execute('insert into STATE_WORKFLOW values(1,2)')
         self.connection.execute('insert into STATE_WORKFLOW values(2,3)')
         self.connection.execute('insert into STATE_WORKFLOW values(3,4)')
-        self.connection.execute('insert into STATE_WORKFLOW values(4,null)')
+        self.connection.execute('insert into STATE_WORKFLOW values(3,5)')
+        self.connection.execute('insert into STATE_WORKFLOW values(4,5)')
+        self.connection.execute('insert into STATE_WORKFLOW values(5,null)')
 
         self.connection.execute(
             'insert into STATE_HISTORY values("1", 1, "submitted for approval", "USER1", "2016-01-01 00:00:00")')
         self.connection.execute(
             'insert into STATE_HISTORY values("1", 2, "validated task", "USER2", "2016-01-01 00:05:00")')
+
+    def test_next_with_criteria(self):
+        self._initialize_tables()
+        sm = statemanager_api.StateManager(workflow_type='TASK_APPROVAL')
+        sm.next(rec_id='1', userid='USER3', notes='approved to got the next stage')
+        sm_output = sm.next(rec_id='1', userid='USER3', notes='close the task', criteria='CLOSE')
+        self.assertEqual(sm_output.rec_id, '1')
+        self.assertEqual(sm_output.workflow_type, 'TASK_APPROVAL')
+        self.assertEqual(sm_output.state_id, 5)
+        self.assertEqual(sm_output.state_name, 'CLOSED')
+        self.assertEqual(sm_output.notes, 'close the task')
+
+    def test_next_with_criteria2(self):
+        self._initialize_tables()
+        sm = statemanager_api.StateManager(workflow_type='TASK_APPROVAL')
+        sm.next(rec_id='1', userid='USER3', notes='approved to got the next stage')
+        sm_output = sm.next(rec_id='1', userid='USER3', notes='complete the task', criteria='COMPLETE')
+        self.assertEqual(sm_output.rec_id, '1')
+        self.assertEqual(sm_output.workflow_type, 'TASK_APPROVAL')
+        self.assertEqual(sm_output.state_id, 4)
+        self.assertEqual(sm_output.state_name, 'COMPLETED')
+        self.assertEqual(sm_output.notes, 'complete the task')
+        sm_output = sm.next(rec_id='1', userid='USER3', notes='close the task', criteria='CLOSE')
+        self.assertEqual(sm_output.rec_id, '1')
+        self.assertEqual(sm_output.workflow_type, 'TASK_APPROVAL')
+        self.assertEqual(sm_output.state_id, 5)
+        self.assertEqual(sm_output.state_name, 'CLOSED')
+        self.assertEqual(sm_output.notes, 'close the task')
+
+    def test_next_with_criteria_failure(self):
+        self._initialize_tables()
+        sm = statemanager_api.StateManager(workflow_type='TASK_APPROVAL')
+        sm.next(rec_id='1', userid='USER3', notes='approved to got the next stage')
+        sm.next(rec_id='1', userid='USER3', notes='complete the task')
+        sm_output = sm.next(rec_id='1', userid='USER3', notes='close the task')
+        self.assertEqual(sm_output.rec_id, '1')
+        self.assertEqual(sm_output.workflow_type, 'TASK_APPROVAL')
+        self.assertEqual(sm_output.state_id, 5)
+        self.assertEqual(sm_output.state_name, 'CLOSED')
+        self.assertEqual(sm_output.notes, 'close the task')
+
+    def test_next_with_criteria_failure(self):
+        self._initialize_tables()
+        sm = statemanager_api.StateManager(workflow_type='TASK_APPROVAL')
+        sm.next(rec_id='1', userid='USER3', notes='approved to got the next stage')
+        sm.next(rec_id='1', userid='USER3', notes='complete the task')
+        sm.next(rec_id='1', userid='USER3', notes='close the task')
+
+        def caller():
+            sm.next(rec_id='1', userid='USER3', notes='close the task')
+
+        self.assertRaises(NextStateNotDefinedError, caller)
+
+
+if __name__ == '__main__':
+    unittest.main()
