@@ -27,22 +27,24 @@ class TestWorkflowState(unittest.TestCase):
 
     def _initialize_tables(self):
         self.connection.execute(
-            'insert into STATE_DEFINITION values(1,"TASK_APPROVAL", "SUBMITTED", null)')
+            'insert into WORKFLOW_DEFINITION values(1,"TASK_APPROVAL", "N", null, null)')
         self.connection.execute(
-            'insert into STATE_DEFINITION values(2,"TASK_APPROVAL", "VALIDATED", null)')
+            'insert into STATE_DEFINITION values(1, 1, "SUBMITTED", null)')
         self.connection.execute(
-            'insert into STATE_DEFINITION values(3,"TASK_APPROVAL", "APPROVED", null)')
+            'insert into STATE_DEFINITION values(2, 1, "VALIDATED", null)')
         self.connection.execute(
-            'insert into STATE_DEFINITION values(4,"TASK_APPROVAL", "COMPLETED","COMPLETE")')
+            'insert into STATE_DEFINITION values(3, 1, "APPROVED", null)')
         self.connection.execute(
-            'insert into STATE_DEFINITION values(5,"TASK_APPROVAL", "CLOSED","CLOSE")')
+            'insert into STATE_DEFINITION values(4, 1, "COMPLETED","COMPLETE")')
+        self.connection.execute(
+            'insert into STATE_DEFINITION values(5, 1, "CLOSED","CLOSE")')
 
-        self.connection.execute('insert into STATE_WORKFLOW values(1,2)')
-        self.connection.execute('insert into STATE_WORKFLOW values(2,3)')
-        self.connection.execute('insert into STATE_WORKFLOW values(3,4)')
-        self.connection.execute('insert into STATE_WORKFLOW values(3,5)')
-        self.connection.execute('insert into STATE_WORKFLOW values(4,5)')
-        self.connection.execute('insert into STATE_WORKFLOW values(5,null)')
+        self.connection.execute('insert into WORKFLOW_STATE values(1,2)')
+        self.connection.execute('insert into WORKFLOW_STATE values(2,3)')
+        self.connection.execute('insert into WORKFLOW_STATE values(3,4)')
+        self.connection.execute('insert into WORKFLOW_STATE values(3,5)')
+        self.connection.execute('insert into WORKFLOW_STATE values(4,5)')
+        self.connection.execute('insert into WORKFLOW_STATE values(5,null)')
 
         self.connection.execute(
             'insert into STATE_HISTORY values("1", 1, "submitted for approval", "USER1", "2016-01-01 00:00:00")')

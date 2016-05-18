@@ -2,8 +2,9 @@ from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.orm.session import Session
 from statemanager.statemanager_error import NoDbSessionAttachedError, NoInitialStateDefinedError
 from statemanager.statemanager_error import NextStateNotDefinedError, NoStateDefinedError
+from statemanager.statemanager_error import NoWorkflowDefined
 from sqlalchemy.orm import sessionmaker
-from statemanager.statemanager_domain import StateHistory, StateDefinition, StateWorkflow
+from statemanager.statemanager_domain import StateHistory, StateDefinition, WorkflowState, WorkflowDefinition
 from sqlalchemy import desc, and_
 from datetime import datetime
 
@@ -70,16 +71,27 @@ class StateManagerOutput:
         return self._insert_ts
 
     def __repr__(self):
-        return '<StateManagerOutput(rec_id=%s, state_type=%s, state_id=%s, ' \
+        return '<StateManagerOutput(rec_id=%s, workflow_type=%s, state_id=%s, ' \
                'state_name=%s, notes=%s, userid=%s, insert_ts=%s)>' % (
                    self._rec_id, self._workflow_type, self._state_id,
                    self._state_name, self._notes, self._userid, self._insert_ts
                )
 
 
+def _get_workflow_definition(workflow_type: str) -> WorkflowDefinition:
+    workflow_definition = _current_session().query(WorkflowDefinition).filter(
+        WorkflowDefinition.workflow_type == workflow_type).first()
+
+    if workflow_definition is None:
+        raise NoWorkflowDefined("No Workflow defined for type %s" % workflow_type)
+
+    return workflow_definition
+
+
 def _get_all(workflow_type: str, rec_id: str) -> list:
+    workflow_definition = _get_workflow_definition(workflow_type)
     return _current_session().query(StateHistory, StateDefinition).filter(and_(
-        and_(StateHistory.rec_id == rec_id, StateDefinition.workflow_type == workflow_type),
+        and_(StateHistory.rec_id == rec_id, StateDefinition.workflow_id == workflow_definition.workflow_id),
         StateHistory.state_id == StateDefinition.state_id)).order_by(
         desc(StateHistory.insert_ts)).all()
 
@@ -93,7 +105,7 @@ def get_state(workflow_type: str, rec_id: str) -> StateManagerOutput:
     latest_record = history[0]
 
     return StateManagerOutput(rec_id=latest_record.StateHistory.rec_id,
-                              workflow_type=latest_record.StateDefinition.workflow_type,
+                              workflow_type=workflow_type,
                               state_id=latest_record.StateHistory.state_id,
                               state_name=latest_record.StateDefinition.state_name,
                               notes=latest_record.StateHistory.notes,
@@ -111,7 +123,7 @@ def get_history(workflow_type: str, rec_id: str) -> [StateManagerOutput]:
 
     for row in history:
         all_records.append(StateManagerOutput(rec_id=row.StateHistory.rec_id,
-                                              workflow_type=row.StateDefinition.workflow_type,
+                                              workflow_type=workflow_type,
                                               state_id=row.StateHistory.state_id,
                                               state_name=row.StateDefinition.state_name,
                                               notes=row.StateHistory.notes,
@@ -122,13 +134,16 @@ def get_history(workflow_type: str, rec_id: str) -> [StateManagerOutput]:
 
 
 def next_state(workflow_type: str, rec_id: str, criteria: str, userid: str, notes: str) -> StateManagerOutput:
+    workflow_definition = _get_workflow_definition(workflow_type)
     current_state = get_state(workflow_type, rec_id)
     session = _current_session()
     if current_state is None:
-        initial_state = session.query(StateDefinition, StateWorkflow).filter(and_(
-            and_(StateDefinition.workflow_type == workflow_type, StateWorkflow.state_id == StateDefinition.state_id),
-            StateDefinition.state_id.notin_(session.query(StateWorkflow.next_state_id).filter(
-                StateWorkflow.next_state_id != None)
+
+        initial_state = session.query(StateDefinition, WorkflowState).filter(and_(
+            and_(StateDefinition.workflow_id == workflow_definition.workflow_id,
+                 WorkflowState.state_id == StateDefinition.state_id),
+            StateDefinition.state_id.notin_(session.query(WorkflowState.next_state_id).filter(
+                WorkflowState.next_state_id != None)
             ))).first()
 
         if initial_state is None:
@@ -140,11 +155,11 @@ def next_state(workflow_type: str, rec_id: str, criteria: str, userid: str, note
                                  userid=userid,
                                  insert_ts=datetime.now()))
     else:
-        next_state_definitions = session.query(StateDefinition, StateWorkflow).filter(
-            and_(StateDefinition.state_id == StateWorkflow.state_id,
-                 and_(StateDefinition.state_id.in_(session.query(StateWorkflow.next_state_id).filter(
-                     StateWorkflow.state_id == current_state.state_id)),
-                     StateDefinition.workflow_type == workflow_type))).all()
+        next_state_definitions = session.query(StateDefinition, WorkflowState).filter(
+            and_(StateDefinition.state_id == WorkflowState.state_id,
+                 and_(StateDefinition.state_id.in_(session.query(WorkflowState.next_state_id).filter(
+                     WorkflowState.state_id == current_state.state_id)),
+                     StateDefinition.workflow_id == workflow_definition.workflow_id))).all()
 
         # Is state defined or is it the last state?
         if not next_state_definitions:
@@ -159,7 +174,7 @@ def next_state(workflow_type: str, rec_id: str, criteria: str, userid: str, note
             raise NextStateNotDefinedError()
 
         session.add(StateHistory(rec_id=rec_id,
-                                 state_id=next_state_definition.StateWorkflow.state_id,
+                                 state_id=next_state_definition.WorkflowState.state_id,
                                  notes=notes,
                                  userid=userid,
                                  insert_ts=datetime.now()))
@@ -168,18 +183,19 @@ def next_state(workflow_type: str, rec_id: str, criteria: str, userid: str, note
     return get_state(workflow_type=workflow_type, rec_id=rec_id)
 
 
-def previous(state_type: str, rec_id: str, userid: str, notes: str) -> StateManagerOutput:
-    current_state = get_state(state_type, rec_id)
+def previous(workflow_type: str, rec_id: str, userid: str, notes: str) -> StateManagerOutput:
+    workflow_definition = _get_workflow_definition(workflow_type)
+    current_state = get_state(workflow_type, rec_id)
 
     if current_state is None:
         raise NoStateDefinedError()
 
     session = _current_session()
 
-    all_possible_prior_state = session.query(StateDefinition, StateWorkflow).filter(
-        and_(StateWorkflow.state_id == StateDefinition.state_id,
-             and_(StateDefinition.workflow_type == state_type,
-                  StateWorkflow.next_state_id == current_state.state_id))).all()
+    all_possible_prior_state = session.query(StateDefinition, WorkflowState).filter(
+        and_(WorkflowState.state_id == StateDefinition.state_id,
+             and_(StateDefinition.workflow_id == workflow_definition.workflow_id,
+                  WorkflowState.next_state_id == current_state.state_id))).all()
 
     if not all_possible_prior_state:
         raise NoStateDefinedError('No prior state to go to from StateDefinition')
@@ -200,4 +216,4 @@ def previous(state_type: str, rec_id: str, userid: str, notes: str) -> StateMana
                              insert_ts=datetime.now()))
     session.flush()
     session.commit()
-    return get_state(workflow_type=state_type, rec_id=rec_id)
+    return get_state(workflow_type=workflow_type, rec_id=rec_id)

@@ -3,7 +3,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from statemanager import statemanager_api
 import os
-from statemanager.statemanager_error import NoStateDefinedError
+from statemanager.statemanager_error import NoStateDefinedError, NoWorkflowDefined
 
 
 class TestWorkflowState(unittest.TestCase):
@@ -27,18 +27,22 @@ class TestWorkflowState(unittest.TestCase):
 
     def _initialize_tables(self):
         self.connection.execute(
-            'insert into STATE_DEFINITION values(1,"TASK_APPROVAL", "SUBMITTED",null)')
-        self.connection.execute(
-            'insert into STATE_DEFINITION values(2,"TASK_APPROVAL", "VALIDATED",null)')
-        self.connection.execute(
-            'insert into STATE_DEFINITION values(3,"TASK_APPROVAL", "APPROVED",null)')
-        self.connection.execute(
-            'insert into STATE_DEFINITION values(4,"TASK_APPROVAL", "COMPLETED",null)')
+            'insert into WORKFLOW_DEFINITION values(1,"TASK_APPROVAL", "N", null, null)'
+        )
 
-        self.connection.execute('insert into STATE_WORKFLOW values(1,2)')
-        self.connection.execute('insert into STATE_WORKFLOW values(2,3)')
-        self.connection.execute('insert into STATE_WORKFLOW values(3,4)')
-        self.connection.execute('insert into STATE_WORKFLOW values(4,null)')
+        self.connection.execute(
+            'insert into STATE_DEFINITION values(1, 1, "SUBMITTED",null)')
+        self.connection.execute(
+            'insert into STATE_DEFINITION values(2, 1, "VALIDATED",null)')
+        self.connection.execute(
+            'insert into STATE_DEFINITION values(3, 1, "APPROVED",null)')
+        self.connection.execute(
+            'insert into STATE_DEFINITION values(4, 1, "COMPLETED",null)')
+
+        self.connection.execute('insert into WORKFLOW_STATE values(1,2)')
+        self.connection.execute('insert into WORKFLOW_STATE values(2,3)')
+        self.connection.execute('insert into WORKFLOW_STATE values(3,4)')
+        self.connection.execute('insert into WORKFLOW_STATE values(4,null)')
 
         self.connection.execute(
             'insert into STATE_HISTORY values("1", 1, "submitted for approval", "USER1", "2016-01-01 00:00:00")')
@@ -61,7 +65,7 @@ class TestWorkflowState(unittest.TestCase):
         def caller():
             sm.previous(rec_id='2', userid='USER3', notes='disapprove to go ahead')
 
-        self.assertRaises(NoStateDefinedError, caller)
+        self.assertRaises(NoWorkflowDefined, caller)
 
     def test_previous(self):
         self._initialize_tables()
@@ -94,6 +98,7 @@ class TestWorkflowState(unittest.TestCase):
         self.assertEqual(sm_output.state_id, 1)
         self.assertEqual(sm_output.state_name, 'SUBMITTED')
         self.assertEqual(sm_output.notes, 'disapprove to go ahead')
+
 
 if __name__ == '__main__':
     unittest.main()

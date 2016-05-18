@@ -8,20 +8,20 @@ class StateDefinition(Base):
     __tablename__ = 'STATE_DEFINITION'
 
     state_id = Column(Integer, primary_key=True)
-    workflow_type = Column(String)
+    workflow_id = Column(Integer)
     state_name = Column(String)
     criteria = Column(String)
 
     def __repr__(self):
-        return "<StateDefinition (state_id=%s, workflow_type=%s, state_name=%s, " \
+        return "<StateDefinition (state_id=%s, workflow_id=%s, state_name=%s, " \
                "criteria=%s)>" % (self.state_id,
-                                  self.workflow_type,
+                                  self.workflow_id,
                                   self.state_name,
                                   self.criteria)
 
 
-class StateWorkflow(Base):
-    __tablename__ = 'STATE_WORKFLOW'
+class WorkflowState(Base):
+    __tablename__ = 'WORKFLOW_STATE'
 
     state_id = Column(Integer, primary_key=True)
     next_state_id = Column(Integer, primary_key=True)
@@ -43,3 +43,22 @@ class StateHistory(Base):
         return "<StateHistory (rec_id=%s, state_id=%s, notes=%s, userid=%s, insert_ts=%s)>" % (
             self.rec_id, self.state_id, self.notes, self.userid, self.insert_ts
         )
+
+
+class WorkflowDefinition(Base):
+    __tablename__ = 'WORKFLOW_DEFINITION'
+
+    workflow_id = Column(Integer, primary_key=True)
+    workflow_type = Column(String)
+    email_notification = Column(String)
+    email_subject = Column(String)
+    email_content = Column(String)
+
+    def __repr__(self):
+        return "<WorkflowDefinition(workflow_id=%s, workflow_type=%s, email_notification=%s," \
+               "email_subject=%s, email_content=%s" % (self.workflow_id,
+                                                       self.workflow_type,
+                                                       self.email_notification,
+                                                       self.email_subject,
+                                                       self.email_content
+                                                       )

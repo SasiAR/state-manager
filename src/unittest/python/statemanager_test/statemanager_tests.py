@@ -4,6 +4,7 @@ from sqlalchemy.orm import sessionmaker
 from statemanager import statemanager_api
 import os
 from datetime import datetime
+from statemanager.statemanager_error import NoWorkflowDefined
 
 
 class TestWorkflowState(unittest.TestCase):
@@ -26,18 +27,21 @@ class TestWorkflowState(unittest.TestCase):
 
     def _initialize_tables(self):
         self.connection.execute(
-            'insert into STATE_DEFINITION values(1,"TASK_APPROVAL", "SUBMITTED",null)')
+            'insert into WORKFLOW_DEFINITION values(1,"TASK_APPROVAL", "N", null, null)'
+        )
         self.connection.execute(
-            'insert into STATE_DEFINITION values(2,"TASK_APPROVAL", "VALIDATED",null)')
+            'insert into STATE_DEFINITION values(1,1, "SUBMITTED",null)')
         self.connection.execute(
-            'insert into STATE_DEFINITION values(3,"TASK_APPROVAL", "APPROVED",null)')
+            'insert into STATE_DEFINITION values(2,1, "VALIDATED",null)')
         self.connection.execute(
-            'insert into STATE_DEFINITION values(4,"TASK_APPROVAL", "COMPLETED",null)')
+            'insert into STATE_DEFINITION values(3,1, "APPROVED",null)')
+        self.connection.execute(
+            'insert into STATE_DEFINITION values(4,1, "COMPLETED",null)')
 
-        self.connection.execute('insert into STATE_WORKFLOW values(1,2)')
-        self.connection.execute('insert into STATE_WORKFLOW values(2,3)')
-        self.connection.execute('insert into STATE_WORKFLOW values(3,4)')
-        self.connection.execute('insert into STATE_WORKFLOW values(4,null)')
+        self.connection.execute('insert into WORKFLOW_STATE values(1,2)')
+        self.connection.execute('insert into WORKFLOW_STATE values(2,3)')
+        self.connection.execute('insert into WORKFLOW_STATE values(3,4)')
+        self.connection.execute('insert into WORKFLOW_STATE values(4,null)')
 
         self.connection.execute(
             'insert into STATE_HISTORY values("1", 1, "submitted for approval", "USER1", "2016-01-01 00:00:00")')
@@ -47,7 +51,11 @@ class TestWorkflowState(unittest.TestCase):
     def test_workflow_latest_empty(self):
         self._initialize_tables()
         sm = statemanager_api.StateManager(workflow_type='TASK_RECORD')
-        self.assertEqual(sm.state(rec_id='1'), None)
+
+        def caller():
+            sm.state(rec_id='1')
+        self.assertRaises(NoWorkflowDefined, caller)
+
         sm = statemanager_api.StateManager(workflow_type='TASK_APPROVAL')
         self.assertEqual(sm.state(rec_id='2'), None)
 
@@ -67,8 +75,10 @@ class TestWorkflowState(unittest.TestCase):
     def test_workflow_history_empty(self):
         self._initialize_tables()
         sm = statemanager_api.StateManager(workflow_type='TASK_RECORD')
-        sm_output = sm.history(rec_id='1')
-        self.assertEqual(sm_output, None)
+
+        def caller():
+            sm.history(rec_id='1')
+        self.assertRaises(NoWorkflowDefined, caller)
 
         sm = statemanager_api.StateManager(workflow_type='TASK_APPROVAL')
         sm_output = sm.history(rec_id='2')

@@ -12,3 +12,7 @@ class NextStateNotDefinedError(Exception):
 
 class NoStateDefinedError(Exception):
     pass
+
+
+class NoWorkflowDefined(Exception):
+    pass
