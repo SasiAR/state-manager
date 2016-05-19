@@ -27,7 +27,7 @@ class TestWorkflowState(unittest.TestCase):
 
     def _initialize_tables(self):
         self.connection.execute(
-            'insert into WORKFLOW_DEFINITION values(1,"TASK_APPROVAL", "N", null, null)'
+            'insert into WORKFLOW_DEFINITION values(1,"TASK_APPROVAL", "N", null, null, null)'
         )
 
         self.connection.execute(
@@ -45,9 +45,11 @@ class TestWorkflowState(unittest.TestCase):
         self.connection.execute('insert into WORKFLOW_STATE values(4,null)')
 
         self.connection.execute(
-            'insert into STATE_HISTORY values("1", 1, "submitted for approval", "USER1", "2016-01-01 00:00:00")')
+            'insert into STATE_HISTORY values("1", 1, "submitted for approval", "USER1", '
+            '"INITIAL", null, "2016-01-01 00:00:00")')
         self.connection.execute(
-            'insert into STATE_HISTORY values("1", 2, "validated task", "USER2", "2016-01-01 00:05:00")')
+            'insert into STATE_HISTORY values("1", 2, "validated task", "USER2", '
+            '"APPROVE", null, "2016-01-01 00:05:00")')
 
     def test_no_rec(self):
         self._initialize_tables()
@@ -75,6 +77,7 @@ class TestWorkflowState(unittest.TestCase):
         self.assertEqual(sm_output.workflow_type, 'TASK_APPROVAL')
         self.assertEqual(sm_output.state_id, 1)
         self.assertEqual(sm_output.state_name, 'SUBMITTED')
+        self.assertEqual(sm_output.state_action, 'REJECT')
         self.assertEqual(sm_output.notes, 'disapprove to go ahead')
 
     def test_previous_failure(self):
@@ -90,13 +93,26 @@ class TestWorkflowState(unittest.TestCase):
     def test_next_and_previous(self):
         self._initialize_tables()
         sm = statemanager_api.StateManager(workflow_type='TASK_APPROVAL')
-        sm.next(rec_id='1', userid='USER3', notes='approve one more level')
-        sm.previous(rec_id='1', userid='USER3', notes='disapprove to go ahead')
+        sm_output = sm.next(rec_id='1', userid='USER3', notes='approve one more level')
+        self.assertEqual(sm_output.rec_id, '1')
+        self.assertEqual(sm_output.workflow_type, 'TASK_APPROVAL')
+        self.assertEqual(sm_output.state_id, 3)
+        self.assertEqual(sm_output.state_name, 'APPROVED')
+        self.assertEqual(sm_output.state_action, 'APPROVE')
+        self.assertEqual(sm_output.notes, 'approve one more level')
+        sm_output = sm.previous(rec_id='1', userid='USER3', notes='disapprove to go ahead')
+        self.assertEqual(sm_output.rec_id, '1')
+        self.assertEqual(sm_output.workflow_type, 'TASK_APPROVAL')
+        self.assertEqual(sm_output.state_id, 2)
+        self.assertEqual(sm_output.state_name, 'VALIDATED')
+        self.assertEqual(sm_output.state_action, 'REJECT')
+        self.assertEqual(sm_output.notes, 'disapprove to go ahead')
         sm_output = sm.previous(rec_id='1', userid='USER3', notes='disapprove to go ahead')
         self.assertEqual(sm_output.rec_id, '1')
         self.assertEqual(sm_output.workflow_type, 'TASK_APPROVAL')
         self.assertEqual(sm_output.state_id, 1)
         self.assertEqual(sm_output.state_name, 'SUBMITTED')
+        self.assertEqual(sm_output.state_action, 'REJECT')
         self.assertEqual(sm_output.notes, 'disapprove to go ahead')
 
 

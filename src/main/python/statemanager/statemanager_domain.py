@@ -37,11 +37,13 @@ class StateHistory(Base):
     state_id = Column(Integer, primary_key=True)
     notes = Column(String)
     userid = Column(String, primary_key=True)
+    state_action = Column(String)
     insert_ts = Column(DateTime, primary_key=True)
+    user_subscription_notification = Column(String)
 
     def __repr__(self):
-        return "<StateHistory (rec_id=%s, state_id=%s, notes=%s, userid=%s, insert_ts=%s)>" % (
-            self.rec_id, self.state_id, self.notes, self.userid, self.insert_ts
+        return "<StateHistory (rec_id=%s, state_id=%s, notes=%s, userid=%s, state_action=%s, insert_ts=%s)>" % (
+            self.rec_id, self.state_id, self.notes, self.userid, self.state_action, self.insert_ts
         )
 
 
@@ -51,14 +53,16 @@ class WorkflowDefinition(Base):
     workflow_id = Column(Integer, primary_key=True)
     workflow_type = Column(String)
     email_notification = Column(String)
+    email_to = Column(String)
     email_subject = Column(String)
     email_content = Column(String)
 
     def __repr__(self):
         return "<WorkflowDefinition(workflow_id=%s, workflow_type=%s, email_notification=%s," \
-               "email_subject=%s, email_content=%s" % (self.workflow_id,
-                                                       self.workflow_type,
-                                                       self.email_notification,
-                                                       self.email_subject,
-                                                       self.email_content
-                                                       )
+               "email_to=%s, email_subject=%s, email_content=%s" % (self.workflow_id,
+                                                                    self.workflow_type,
+                                                                    self.email_notification,
+                                                                    self.email_to,
+                                                                    self.email_subject,
+                                                                    self.email_content
+                                                                    )

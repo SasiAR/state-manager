@@ -27,7 +27,7 @@ class TestWorkflowState(unittest.TestCase):
 
     def _initialize_tables(self):
         self.connection.execute(
-            'insert into WORKFLOW_DEFINITION values(1,"TASK_APPROVAL", "N", null, null)'
+            'insert into WORKFLOW_DEFINITION values(1,"TASK_APPROVAL", "N", null, null, null)'
         )
         self.connection.execute(
             'insert into STATE_DEFINITION values(1,1, "SUBMITTED",null)')
@@ -44,9 +44,11 @@ class TestWorkflowState(unittest.TestCase):
         self.connection.execute('insert into WORKFLOW_STATE values(4,null)')
 
         self.connection.execute(
-            'insert into STATE_HISTORY values("1", 1, "submitted for approval", "USER1", "2016-01-01 00:00:00")')
+            'insert into STATE_HISTORY values("1", 1, "submitted for approval", "USER1", '
+            '"INITIAL", null, "2016-01-01 00:00:00")')
         self.connection.execute(
-            'insert into STATE_HISTORY values("1", 2, "validated task", "USER2", "2016-01-01 00:05:00")')
+            'insert into STATE_HISTORY values("1", 2, "validated task", "USER2", '
+            '"APPROVE" , null, "2016-01-01 00:05:00")')
 
     def test_workflow_latest_empty(self):
         self._initialize_tables()
@@ -54,6 +56,7 @@ class TestWorkflowState(unittest.TestCase):
 
         def caller():
             sm.state(rec_id='1')
+
         self.assertRaises(NoWorkflowDefined, caller)
 
         sm = statemanager_api.StateManager(workflow_type='TASK_APPROVAL')
@@ -70,6 +73,7 @@ class TestWorkflowState(unittest.TestCase):
         self.assertEqual(sm_output.state_name, 'VALIDATED')
         self.assertEqual(sm_output.notes, 'validated task')
         self.assertEqual(sm_output.userid, 'USER2')
+        self.assertEqual(sm_output.state_action, 'APPROVE')
         self.assertEqual(sm_output.insert_ts, datetime(2016, 1, 1, 0, 5, 0))
 
     def test_workflow_history_empty(self):
@@ -78,6 +82,7 @@ class TestWorkflowState(unittest.TestCase):
 
         def caller():
             sm.history(rec_id='1')
+
         self.assertRaises(NoWorkflowDefined, caller)
 
         sm = statemanager_api.StateManager(workflow_type='TASK_APPROVAL')
@@ -95,6 +100,7 @@ class TestWorkflowState(unittest.TestCase):
         self.assertEqual(sm_output[0].state_name, 'VALIDATED')
         self.assertEqual(sm_output[0].notes, 'validated task')
         self.assertEqual(sm_output[0].userid, 'USER2')
+        self.assertEqual(sm_output[0].state_action, 'APPROVE')
         self.assertEqual(sm_output[0].insert_ts, datetime(2016, 1, 1, 0, 5, 0))
 
         self.assertEqual(sm_output[1].rec_id, '1')
@@ -103,7 +109,9 @@ class TestWorkflowState(unittest.TestCase):
         self.assertEqual(sm_output[1].state_name, 'SUBMITTED')
         self.assertEqual(sm_output[1].notes, 'submitted for approval')
         self.assertEqual(sm_output[1].userid, 'USER1')
+        self.assertEqual(sm_output[1].state_action, 'INITIAL')
         self.assertEqual(sm_output[1].insert_ts, datetime(2016, 1, 1, 0, 0, 0))
+
 
 if __name__ == '__main__':
     unittest.main()
