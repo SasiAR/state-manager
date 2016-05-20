@@ -21,9 +21,9 @@ def _create_notification(subject: str, content: str, to: [str], cc: [str]) -> MI
     return msg
 
 
-def _send_notification(msg: MIMEText, to: [str], cc: [str]) -> bool:
+def _send_notification(msg: MIMEText) -> bool:
     smtp = smtplib.SMTP(__statemanager_smtphost)
-    # smtp.sendmail('noreply@workflow.com', to, msg.as_string())
+    smtp.send_message(msg)
 
 
 def notify_users(workflow_type: str, rec_id: str) -> bool:
@@ -31,28 +31,38 @@ def notify_users(workflow_type: str, rec_id: str) -> bool:
         WorkflowDefinition.workflow_type == workflow_type).first()
 
     if workflow_definition.email_notification.lower() == 'n':
-        return
+        return False
 
     current_state = current_session().query(StateHistory, StateDefinition).filter(and_(
         and_(StateHistory.rec_id == rec_id, StateDefinition.workflow_id == workflow_definition.workflow_id),
         StateHistory.state_id == StateDefinition.state_id)).order_by(
         desc(StateHistory.insert_ts)).first()
 
-    cc_users = current_session().query(StateHistory.user_subscription_notification).filter(
+    subscription = current_session().query(StateHistory.user_subscription_notification).filter(
         and_(StateHistory.rec_id == rec_id), StateHistory.user_subscription_notification != None).all()
+
+    cc_users = []
+
+    if subscription:
+        for user in subscription:
+            cc_users.append(user[0])
 
     if current_state.StateDefinition.email_to is not None:
         to_users = current_state.StateDefinition.email_to.split(";")
     else:
         to_users = []
 
-    if not to_users and ( cc_users is None or cc_users):
-        return
+    if not to_users and (cc_users is None or cc_users):
+        return False
 
     subject = workflow_definition.email_subject + "-" + rec_id
     content = workflow_definition.email_content
-    content += " The state was changed with notes - "
+    content += " The state was changed to "
+    content += current_state.StateDefinition.state_name
+    content += " with notes - "
     content += current_state.StateHistory.notes
 
     msg = _create_notification(subject=subject, content=content, to=to_users, cc=cc_users)
-    _send_notification(msg=msg, to=to_users, cc=cc_users)
+    _send_notification(msg=msg)
+
+    return True

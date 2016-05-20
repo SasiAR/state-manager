@@ -1,8 +1,9 @@
 import unittest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from statemanager import statemanager_api
+from statemanager import statemanager_api, statemanager_notifier
 import os
+from email.mime.text import MIMEText
 
 
 class TestWorkflowState(unittest.TestCase):
@@ -55,9 +56,14 @@ class TestWorkflowState(unittest.TestCase):
     def test_notify(self):
         self._initialize_tables()
         sm = statemanager_api.StateManager(workflow_type="TASK_APPROVAL")
-        sm.notify_users(rec_id="1")
+        self.assertFalse(sm.notify_users(rec_id="1"))
 
     def test_notify_pass(self):
+        def mock_notification(msg: MIMEText):
+            global msg_result
+            msg_result = msg
+
+        statemanager_notifier._send_notification = mock_notification
         self._initialize_tables()
         self.connection.execute(
             'update WORKFLOW_DEFINITION set email_notification="Y", '
@@ -65,7 +71,85 @@ class TestWorkflowState(unittest.TestCase):
             ' email_content="content for email."'
             ' where workflow_id = 1')
         sm = statemanager_api.StateManager(workflow_type="TASK_APPROVAL")
-        sm.notify_users(rec_id="1")
+        self.assertTrue(sm.notify_users(rec_id="1"))
+
+        self.assertEqual(["someone@fromsomewhere.com"], msg_result._headers[4][1])
+        self.assertEqual([], msg_result._headers[5][1])
+        self.assertEqual("content for email. The state was changed to VALIDATED with notes - validated task",
+                         msg_result._payload)
+
+    def test_notify_pass_previous_state(self):
+        def mock_notification(msg: MIMEText):
+            global msg_result
+            msg_result = msg
+
+        statemanager_notifier._send_notification = mock_notification
+        self._initialize_tables()
+        self.connection.execute(
+            'update WORKFLOW_DEFINITION set email_notification="Y", '
+            ' email_subject="subject for notification",'
+            ' email_content="content for email."'
+            ' where workflow_id = 1')
+        sm = statemanager_api.StateManager(workflow_type="TASK_APPROVAL")
+        sm.next(rec_id='1', userid='USER3', notes='approved to got the next stage')
+
+        self.assertEqual(["someone@fromsomewhere.com"], msg_result._headers[4][1])
+        self.assertEqual([], msg_result._headers[5][1])
+        self.assertEqual("content for email. "
+                         "The state was changed to APPROVED with notes - approved to got the next stage",
+                         msg_result._payload)
+
+    def test_notify_pass_previous_state_subsription(self):
+        def mock_notification(msg: MIMEText):
+            global msg_result
+            msg_result = msg
+
+        statemanager_notifier._send_notification = mock_notification
+        self._initialize_tables()
+        self.connection.execute(
+            'update WORKFLOW_DEFINITION set email_notification="Y", '
+            ' email_subject="subject for notification",'
+            ' email_content="content for email."'
+            ' where workflow_id = 1')
+        sm = statemanager_api.StateManager(workflow_type="TASK_APPROVAL")
+        sm.previous(rec_id='1', userid='USER3', notes='reject the approval request',
+                    user_subscription_notification='user3@fromsomewhere.com')
+
+        self.assertEqual(["someone@fromsomewhere.com"], msg_result._headers[4][1])
+        self.assertEqual(["user3@fromsomewhere.com"], msg_result._headers[5][1])
+        self.assertEqual("content for email. "
+                         "The state was changed to SUBMITTED with notes - reject the approval request",
+                         msg_result._payload)
+
+    def test_notify_pass_next_state_subscription(self):
+        def mock_notification(msg: MIMEText):
+            global msg_result
+            msg_result = msg
+
+        statemanager_notifier._send_notification = mock_notification
+        self._initialize_tables()
+        self.connection.execute(
+            'update WORKFLOW_DEFINITION set email_notification="Y", '
+            ' email_subject="subject for notification",'
+            ' email_content="content for email."'
+            ' where workflow_id = 1')
+        sm = statemanager_api.StateManager(workflow_type="TASK_APPROVAL")
+        sm.next(rec_id='1', userid='USER3', notes='approved to got the next stage',
+                user_subscription_notification='user3@fromsomewhere.com')
+        self.assertEqual(["someone@fromsomewhere.com"], msg_result._headers[4][1])
+        self.assertEqual(["user3@fromsomewhere.com"], msg_result._headers[5][1])
+        self.assertEqual("content for email. "
+                         "The state was changed to APPROVED with notes - approved to got the next stage",
+                         msg_result._payload)
+
+        sm.next(rec_id='1', userid='USER4', notes='approved to got the next stage',
+                user_subscription_notification='user4@fromsomewhere.com')
+
+        self.assertEqual(["someone@fromsomewhere.com"], msg_result._headers[4][1])
+        self.assertEqual(["user3@fromsomewhere.com", "user4@fromsomewhere.com"], msg_result._headers[5][1])
+        self.assertEqual("content for email. "
+                         "The state was changed to COMPLETED with notes - approved to got the next stage",
+                         msg_result._payload)
 
 
 if __name__ == '__main__':

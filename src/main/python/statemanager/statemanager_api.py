@@ -33,5 +33,5 @@ class StateManager:
         self.notify_users(rec_id=rec_id)
         return output
 
-    def notify_users(self, rec_id: str) -> None:
-        statemanager_notifier.notify_users(workflow_type=self.workflow_type, rec_id=rec_id)
+    def notify_users(self, rec_id: str) -> bool:
+        return statemanager_notifier.notify_users(workflow_type=self.workflow_type, rec_id=rec_id)
