@@ -202,7 +202,8 @@ def next_state(workflow_type: str, rec_id: str, criteria: str, userid: str, note
     return get_state(workflow_type=workflow_type, rec_id=rec_id)
 
 
-def previous(workflow_type: str, rec_id: str, userid: str, notes: str) -> StateManagerOutput:
+def previous(workflow_type: str, rec_id: str, userid: str, notes: str,
+             user_subscription_notification: str) -> StateManagerOutput:
     workflow_definition = _get_workflow_definition(workflow_type)
     current_state = get_state(workflow_type, rec_id)
 
@@ -233,6 +234,7 @@ def previous(workflow_type: str, rec_id: str, userid: str, notes: str) -> StateM
                              notes=notes,
                              userid=userid,
                              state_action=StateAction.REJECT.name,
+                             user_subscription_notification=user_subscription_notification,
                              insert_ts=datetime.now()))
     session.flush()
     session.commit()

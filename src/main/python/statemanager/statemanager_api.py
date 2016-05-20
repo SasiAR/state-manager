@@ -25,8 +25,11 @@ class StateManager:
         self.notify_users(rec_id=rec_id)
         return output
 
-    def previous(self, rec_id: str, userid: str, notes: str) -> statemanager.StateManagerOutput:
-        output = statemanager.previous(self.workflow_type, rec_id=rec_id, userid=userid, notes=notes)
+    def previous(self, rec_id: str, userid: str, notes: str,
+                 user_subscription_notification: str = None) -> statemanager.StateManagerOutput:
+        output = statemanager.previous(self.workflow_type, rec_id=rec_id,
+                                       userid=userid, notes=notes,
+                                       user_subscription_notification=user_subscription_notification)
         self.notify_users(rec_id=rec_id)
         return output
 

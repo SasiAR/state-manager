@@ -41,7 +41,14 @@ def notify_users(workflow_type: str, rec_id: str) -> bool:
     cc_users = current_session().query(StateHistory.user_subscription_notification).filter(
         and_(StateHistory.rec_id == rec_id), StateHistory.user_subscription_notification != None).all()
 
-    to_users = workflow_definition.email_to.split(";")
+    if current_state.StateDefinition.email_to is not None:
+        to_users = current_state.StateDefinition.email_to.split(";")
+    else:
+        to_users = []
+
+    if not to_users and ( cc_users is None or cc_users):
+        return
+
     subject = workflow_definition.email_subject + "-" + rec_id
     content = workflow_definition.email_content
     content += " The state was changed with notes - "

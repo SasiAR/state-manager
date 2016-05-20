@@ -27,16 +27,16 @@ class TestWorkflowState(unittest.TestCase):
 
     def _initialize_tables(self):
         self.connection.execute(
-            'insert into WORKFLOW_DEFINITION values(1,"TASK_APPROVAL", "N", null, null, null)'
+            'insert into WORKFLOW_DEFINITION values(1,"TASK_APPROVAL", "N", null, null)'
         )
         self.connection.execute(
-            'insert into STATE_DEFINITION values(1,1, "SUBMITTED",null)')
+            'insert into STATE_DEFINITION values(1,1, "SUBMITTED",null, null)')
         self.connection.execute(
-            'insert into STATE_DEFINITION values(2,1, "VALIDATED",null)')
+            'insert into STATE_DEFINITION values(2,1, "VALIDATED",null, null)')
         self.connection.execute(
-            'insert into STATE_DEFINITION values(3,1, "APPROVED",null)')
+            'insert into STATE_DEFINITION values(3,1, "APPROVED",null, null)')
         self.connection.execute(
-            'insert into STATE_DEFINITION values(4,1, "COMPLETED",null)')
+            'insert into STATE_DEFINITION values(4,1, "COMPLETED",null, null)')
 
         self.connection.execute('insert into WORKFLOW_STATE values(1,2)')
         self.connection.execute('insert into WORKFLOW_STATE values(2,3)')

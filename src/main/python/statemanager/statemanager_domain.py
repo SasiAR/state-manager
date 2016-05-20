@@ -11,13 +11,15 @@ class StateDefinition(Base):
     workflow_id = Column(Integer)
     state_name = Column(String)
     criteria = Column(String)
+    email_to = Column(String)
 
     def __repr__(self):
         return "<StateDefinition (state_id=%s, workflow_id=%s, state_name=%s, " \
-               "criteria=%s)>" % (self.state_id,
-                                  self.workflow_id,
-                                  self.state_name,
-                                  self.criteria)
+               "email_to=%s, criteria=%s)>" % (self.state_id,
+                                               self.workflow_id,
+                                               self.state_name,
+                                               self.criteria,
+                                               self.email_to)
 
 
 class WorkflowState(Base):
@@ -53,16 +55,14 @@ class WorkflowDefinition(Base):
     workflow_id = Column(Integer, primary_key=True)
     workflow_type = Column(String)
     email_notification = Column(String)
-    email_to = Column(String)
     email_subject = Column(String)
     email_content = Column(String)
 
     def __repr__(self):
         return "<WorkflowDefinition(workflow_id=%s, workflow_type=%s, email_notification=%s," \
-               "email_to=%s, email_subject=%s, email_content=%s" % (self.workflow_id,
-                                                                    self.workflow_type,
-                                                                    self.email_notification,
-                                                                    self.email_to,
-                                                                    self.email_subject,
-                                                                    self.email_content
-                                                                    )
+               " email_subject=%s, email_content=%s" % (self.workflow_id,
+                                                        self.workflow_type,
+                                                        self.email_notification,
+                                                        self.email_subject,
+                                                        self.email_content
+                                                        )

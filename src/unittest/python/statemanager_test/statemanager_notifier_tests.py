@@ -26,17 +26,17 @@ class TestWorkflowState(unittest.TestCase):
 
     def _initialize_tables(self):
         self.connection.execute(
-            'insert into WORKFLOW_DEFINITION values(1,"TASK_APPROVAL", "N", null, null, null)')
+            'insert into WORKFLOW_DEFINITION values(1,"TASK_APPROVAL", "N", null, null)')
         self.connection.execute(
-            'insert into STATE_DEFINITION values(1, 1, "SUBMITTED", null)')
+            'insert into STATE_DEFINITION values(1, 1, "SUBMITTED", null, "someone@fromsomewhere.com")')
         self.connection.execute(
-            'insert into STATE_DEFINITION values(2, 1, "VALIDATED", null)')
+            'insert into STATE_DEFINITION values(2, 1, "VALIDATED", null, "someone@fromsomewhere.com")')
         self.connection.execute(
-            'insert into STATE_DEFINITION values(3, 1, "APPROVED", null)')
+            'insert into STATE_DEFINITION values(3, 1, "APPROVED", null, "someone@fromsomewhere.com")')
         self.connection.execute(
-            'insert into STATE_DEFINITION values(4, 1, "COMPLETED","COMPLETE")')
+            'insert into STATE_DEFINITION values(4, 1, "COMPLETED","COMPLETE", "someone@fromsomewhere.com")')
         self.connection.execute(
-            'insert into STATE_DEFINITION values(5, 1, "CLOSED","CLOSE")')
+            'insert into STATE_DEFINITION values(5, 1, "CLOSED","CLOSE", "someone@fromsomewhere.com")')
 
         self.connection.execute('insert into WORKFLOW_STATE values(1,2)')
         self.connection.execute('insert into WORKFLOW_STATE values(2,3)')
@@ -62,9 +62,8 @@ class TestWorkflowState(unittest.TestCase):
         self.connection.execute(
             'update WORKFLOW_DEFINITION set email_notification="Y", '
             ' email_subject="subject for notification",'
-            ' email_content="content for email.",'
-            ' email_to="someone@fromsomewhere.com" '
-            'where workflow_id = 1')
+            ' email_content="content for email."'
+            ' where workflow_id = 1')
         sm = statemanager_api.StateManager(workflow_type="TASK_APPROVAL")
         sm.notify_users(rec_id="1")
 
