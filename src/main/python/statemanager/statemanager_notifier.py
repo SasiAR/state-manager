@@ -45,7 +45,8 @@ def notify_users(workflow_type: str, rec_id: str) -> bool:
 
     if subscription:
         for user in subscription:
-            cc_users.append(user[0])
+            if user[0] not in cc_users:
+                cc_users.append(user[0])
 
     if current_state.StateDefinition.email_to is not None:
         to_users = current_state.StateDefinition.email_to.split(";")

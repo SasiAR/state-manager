@@ -151,6 +151,35 @@ class TestWorkflowState(unittest.TestCase):
                          "The state was changed to COMPLETED with notes - approved to got the next stage",
                          msg_result._payload)
 
+    def test_notify_pass_next_state_nultiple_subscription(self):
+        def mock_notification(msg: MIMEText):
+            global msg_result
+            msg_result = msg
+
+        statemanager_notifier._send_notification = mock_notification
+        self._initialize_tables()
+        self.connection.execute(
+            'update WORKFLOW_DEFINITION set email_notification="Y", '
+            ' email_subject="subject for notification",'
+            ' email_content="content for email."'
+            ' where workflow_id = 1')
+        sm = statemanager_api.StateManager(workflow_type="TASK_APPROVAL")
+        sm.next(rec_id='1', userid='USER3', notes='approved to got the next stage',
+                user_subscription_notification='user3@fromsomewhere.com')
+        self.assertEqual(["someone@fromsomewhere.com"], msg_result._headers[4][1])
+        self.assertEqual(["user3@fromsomewhere.com"], msg_result._headers[5][1])
+        self.assertEqual("content for email. "
+                         "The state was changed to APPROVED with notes - approved to got the next stage",
+                         msg_result._payload)
+
+        sm.next(rec_id='1', userid='USER3', notes='approved to got the next stage',
+                user_subscription_notification='user3@fromsomewhere.com')
+
+        self.assertEqual(["someone@fromsomewhere.com"], msg_result._headers[4][1])
+        self.assertEqual(["user3@fromsomewhere.com"], msg_result._headers[5][1])
+        self.assertEqual("content for email. "
+                         "The state was changed to COMPLETED with notes - approved to got the next stage",
+                         msg_result._payload)
 
 if __name__ == '__main__':
     unittest.main()
