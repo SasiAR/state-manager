@@ -1,28 +1,10 @@
-from sqlalchemy.orm.scoping import scoped_session
-from sqlalchemy.orm.session import Session
-from statemanager.statemanager_error import NoDbSessionAttachedError, NoInitialStateDefinedError
-from statemanager.statemanager_error import NextStateNotDefinedError, NoStateDefinedError
-from statemanager.statemanager_error import NoWorkflowDefined
-from sqlalchemy.orm import sessionmaker
-from statemanager.statemanager_domain import StateHistory, StateDefinition, WorkflowState, WorkflowDefinition
+from statemanager.error import NoInitialStateDefinedError, NoWorkflowDefined
+from statemanager.error import NextStateNotDefinedError, NoStateDefinedError
+from statemanager.dao import current_session
+from statemanager.domain import StateHistory, StateDefinition, WorkflowState, WorkflowDefinition
 from sqlalchemy import desc, and_
 from datetime import datetime
 from enum import Enum
-
-__state_session_factory = None
-
-
-def set_session_factory(sm: sessionmaker) -> None:
-    global __state_session_factory
-    __state_session_factory = sm
-
-
-def current_session() -> Session:
-    if __state_session_factory is None:
-        raise NoDbSessionAttachedError("DB Session is not attached, "
-                                       "call initilaize in statemanager with db session factory")
-
-    return scoped_session(__state_session_factory)
 
 
 class StateAction(Enum):
@@ -147,8 +129,8 @@ def get_history(workflow_type: str, item_id: str) -> [StateManagerOutput]:
     return all_records
 
 
-def next_state(workflow_type: str, item_id: str, criteria: str, userid: str, notes: str,
-               user_subscription_notification: str) -> StateManagerOutput:
+def moveup(workflow_type: str, item_id: str, criteria: str, userid: str, notes: str,
+           user_subscription_notification: str) -> StateManagerOutput:
     workflow_definition = _get_workflow_definition(workflow_type)
     current_state = get_state(workflow_type, item_id)
     session = current_session()
@@ -202,7 +184,7 @@ def next_state(workflow_type: str, item_id: str, criteria: str, userid: str, not
     return get_state(workflow_type=workflow_type, item_id=item_id)
 
 
-def previous(workflow_type: str, item_id: str, userid: str, notes: str,
+def sendback(workflow_type: str, item_id: str, userid: str, notes: str,
              user_subscription_notification: str) -> StateManagerOutput:
     workflow_definition = _get_workflow_definition(workflow_type)
     current_state = get_state(workflow_type, item_id)

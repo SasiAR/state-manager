@@ -1,11 +1,11 @@
 from sqlalchemy.orm import sessionmaker
 from statemanager import statemanager
-from statemanager import statemanager_notifier
+from statemanager import notifier, dao
 
 
 def initialize(sm: sessionmaker, mailhost: str=None) -> None:
-    statemanager.set_session_factory(sm)
-    statemanager_notifier.set_smtphost(mailhost)
+    dao.set_session_factory(sm)
+    notifier.set_smtphost(mailhost)
 
 
 class StateManager:
@@ -18,21 +18,21 @@ class StateManager:
     def history(self, item_id: str) -> [statemanager.StateManagerOutput]:
         return statemanager.get_history(self.workflow_type, item_id)
 
-    def next(self, item_id: str, userid: str, notes: str, criteria: str = None,
-             user_subscription_notification: str = None) -> statemanager.StateManagerOutput:
-        output = statemanager.next_state(self.workflow_type, item_id=item_id, userid=userid, notes=notes,
-                                         criteria=criteria,
-                                         user_subscription_notification=user_subscription_notification)
+    def moveup(self, item_id: str, userid: str, notes: str, criteria: str = None,
+               user_subscription_notification: str = None) -> statemanager.StateManagerOutput:
+        output = statemanager.moveup(self.workflow_type, item_id=item_id, userid=userid, notes=notes,
+                                     criteria=criteria,
+                                     user_subscription_notification=user_subscription_notification)
         self.notify_users(item_id=item_id)
         return output
 
-    def previous(self, item_id: str, userid: str, notes: str,
+    def sendback(self, item_id: str, userid: str, notes: str,
                  user_subscription_notification: str = None) -> statemanager.StateManagerOutput:
-        output = statemanager.previous(self.workflow_type, item_id=item_id,
+        output = statemanager.sendback(self.workflow_type, item_id=item_id,
                                        userid=userid, notes=notes,
                                        user_subscription_notification=user_subscription_notification)
         self.notify_users(item_id=item_id)
         return output
 
     def notify_users(self, item_id: str) -> bool:
-        return statemanager_notifier.notify_users(workflow_type=self.workflow_type, item_id=item_id)
+        return notifier.notify_users(workflow_type=self.workflow_type, item_id=item_id)

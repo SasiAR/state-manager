@@ -1,16 +1,16 @@
 import unittest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from statemanager import statemanager_api
+from statemanager import api
 import os
-from statemanager.statemanager_error import NextStateNotDefinedError, NoWorkflowDefined
+from statemanager.error import NextStateNotDefinedError, NoWorkflowDefined
 
 
 class TestWorkflowState(unittest.TestCase):
     def setUp(self):
         engine = create_engine("sqlite://", echo=False)
         session_factory = sessionmaker(bind=engine)
-        statemanager_api.initialize(session_factory)
+        api.initialize(session_factory)
         ddl_file = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                 '../../../../resources/database-schema/required_tables.sql')
         ddls = ""
@@ -27,32 +27,32 @@ class TestWorkflowState(unittest.TestCase):
 
     def _initialize_tables(self):
         self.connection.execute(
-            'insert into WORKFLOW_DEFINITION values(1,"TASK_APPROVAL", "N", null, null)')
+            'insert into SM_WORKFLOW_DEFINITION values(1,"TASK_APPROVAL", "N", null, null)')
         self.connection.execute(
-            'insert into STATE_DEFINITION values(1,1, "SUBMITTED", null, null)')
+            'insert into SM_STATE_DEFINITION values(1,1, "SUBMITTED", null, null)')
         self.connection.execute(
-            'insert into STATE_DEFINITION values(2,1, "VALIDATED", null, null)')
+            'insert into SM_STATE_DEFINITION values(2,1, "VALIDATED", null, null)')
         self.connection.execute(
-            'insert into STATE_DEFINITION values(3,1, "APPROVED", null, null)')
+            'insert into SM_STATE_DEFINITION values(3,1, "APPROVED", null, null)')
         self.connection.execute(
-            'insert into STATE_DEFINITION values(4,1, "COMPLETED",null, null)')
+            'insert into SM_STATE_DEFINITION values(4,1, "COMPLETED",null, null)')
 
-        self.connection.execute('insert into WORKFLOW_STATE values(1,2)')
-        self.connection.execute('insert into WORKFLOW_STATE values(2,3)')
-        self.connection.execute('insert into WORKFLOW_STATE values(3,4)')
-        self.connection.execute('insert into WORKFLOW_STATE values(4,null)')
+        self.connection.execute('insert into SM_WORKFLOW_STATE values(1,2)')
+        self.connection.execute('insert into SM_WORKFLOW_STATE values(2,3)')
+        self.connection.execute('insert into SM_WORKFLOW_STATE values(3,4)')
+        self.connection.execute('insert into SM_WORKFLOW_STATE values(4,null)')
 
         self.connection.execute(
-            'insert into STATE_HISTORY values("1", 1, "submitted for approval", "USER1", '
+            'insert into SM_STATE_HISTORY values("1", 1, "submitted for approval", "USER1", '
             '"INITIAL", null, "2016-01-01 00:00:00")')
         self.connection.execute(
-            'insert into STATE_HISTORY values("1", 2, "validated task", "USER2", '
+            'insert into SM_STATE_HISTORY values("1", 2, "validated task", "USER2", '
             '"APPROVE", null, "2016-01-01 00:05:00")')
 
-    def test_next_state(self):
+    def test_moveup_state(self):
         self._initialize_tables()
-        sm = statemanager_api.StateManager(workflow_type='TASK_APPROVAL')
-        sm_output = sm.next(item_id='1', userid='USER3', notes='approved to got the next stage')
+        sm = api.StateManager(workflow_type='TASK_APPROVAL')
+        sm_output = sm.moveup(item_id='1', userid='USER3', notes='approved to got the next stage')
         self.assertEqual(sm_output.item_id, '1')
         self.assertEqual(sm_output.workflow_type, 'TASK_APPROVAL')
         self.assertEqual(sm_output.state_id, 3)
@@ -62,8 +62,8 @@ class TestWorkflowState(unittest.TestCase):
 
     def test_initial(self):
         self._initialize_tables()
-        sm = statemanager_api.StateManager(workflow_type='TASK_APPROVAL')
-        sm_output = sm.next(item_id='2', userid='USER3', notes='submit my task for initial state')
+        sm = api.StateManager(workflow_type='TASK_APPROVAL')
+        sm_output = sm.moveup(item_id='2', userid='USER3', notes='submit my task for initial state')
         self.assertEqual(sm_output.item_id, '2')
         self.assertEqual(sm_output.workflow_type, 'TASK_APPROVAL')
         self.assertEqual(sm_output.state_id, 1)
@@ -71,17 +71,17 @@ class TestWorkflowState(unittest.TestCase):
         self.assertEqual(sm_output.state_action, "INITIAL")
         self.assertEqual(sm_output.notes, 'submit my task for initial state')
 
-    def test_initial_and_next(self):
+    def test_initial_and_moveup(self):
         self._initialize_tables()
-        sm = statemanager_api.StateManager(workflow_type='TASK_APPROVAL')
-        sm_output = sm.next(item_id='2', userid='USER3', notes='submit my task for initial state')
+        sm = api.StateManager(workflow_type='TASK_APPROVAL')
+        sm_output = sm.moveup(item_id='2', userid='USER3', notes='submit my task for initial state')
         self.assertEqual(sm_output.item_id, '2')
         self.assertEqual(sm_output.workflow_type, 'TASK_APPROVAL')
         self.assertEqual(sm_output.state_id, 1)
         self.assertEqual(sm_output.state_name, 'SUBMITTED')
         self.assertEqual(sm_output.state_action, "INITIAL")
         self.assertEqual(sm_output.notes, 'submit my task for initial state')
-        sm_output = sm.next(item_id='2', userid='USER4', notes='validate task')
+        sm_output = sm.moveup(item_id='2', userid='USER4', notes='validate task')
         self.assertEqual(sm_output.item_id, '2')
         self.assertEqual(sm_output.workflow_type, 'TASK_APPROVAL')
         self.assertEqual(sm_output.state_id, 2)
@@ -91,21 +91,21 @@ class TestWorkflowState(unittest.TestCase):
 
     def test_no_state(self):
         self._initialize_tables()
-        sm = statemanager_api.StateManager(workflow_type='TASK_MANAGE')
+        sm = api.StateManager(workflow_type='TASK_MANAGE')
 
         def caller():
-            sm.next(item_id='3', userid='USER3', notes='submit my task for initial state')
+            sm.moveup(item_id='3', userid='USER3', notes='submit my task for initial state')
 
         self.assertRaises(NoWorkflowDefined, caller)
 
     def test_final_state(self):
         self._initialize_tables()
-        sm = statemanager_api.StateManager(workflow_type='TASK_APPROVAL')
-        sm.next(item_id='1', userid='USER3', notes='approved to got the next stage')
-        sm.next(item_id='1', userid='USER3', notes='approved to got the next stage')
+        sm = api.StateManager(workflow_type='TASK_APPROVAL')
+        sm.moveup(item_id='1', userid='USER3', notes='approved to got the next stage')
+        sm.moveup(item_id='1', userid='USER3', notes='approved to got the next stage')
 
         def caller():
-            sm.next(item_id='1', userid='USER3', notes='approved to got the next stage')
+            sm.moveup(item_id='1', userid='USER3', notes='approved to got the next stage')
 
         self.assertRaises(NextStateNotDefinedError, caller)
 

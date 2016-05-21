@@ -5,7 +5,7 @@ Base = declarative_base()
 
 
 class StateDefinition(Base):
-    __tablename__ = 'STATE_DEFINITION'
+    __tablename__ = 'SM_STATE_DEFINITION'
 
     state_id = Column(Integer, primary_key=True)
     workflow_id = Column(Integer)
@@ -23,7 +23,7 @@ class StateDefinition(Base):
 
 
 class WorkflowState(Base):
-    __tablename__ = 'WORKFLOW_STATE'
+    __tablename__ = 'SM_WORKFLOW_STATE'
 
     state_id = Column(Integer, primary_key=True)
     next_state_id = Column(Integer, primary_key=True)
@@ -33,7 +33,7 @@ class WorkflowState(Base):
 
 
 class StateHistory(Base):
-    __tablename__ = 'STATE_HISTORY'
+    __tablename__ = 'SM_STATE_HISTORY'
 
     item_id = Column(String, primary_key=True)
     state_id = Column(Integer, primary_key=True)
@@ -50,7 +50,7 @@ class StateHistory(Base):
 
 
 class WorkflowDefinition(Base):
-    __tablename__ = 'WORKFLOW_DEFINITION'
+    __tablename__ = 'SM_WORKFLOW_DEFINITION'
 
     workflow_id = Column(Integer, primary_key=True)
     workflow_type = Column(String)

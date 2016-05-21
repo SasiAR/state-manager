@@ -1,6 +1,6 @@
 import smtplib
 from email.mime.text import MIMEText
-from statemanager.statemanager_domain import WorkflowDefinition, StateHistory, StateDefinition
+from statemanager.domain import WorkflowDefinition, StateHistory, StateDefinition
 from statemanager.statemanager import current_session
 from sqlalchemy import and_, desc
 
