@@ -35,7 +35,7 @@ class WorkflowState(Base):
 class StateHistory(Base):
     __tablename__ = 'STATE_HISTORY'
 
-    rec_id = Column(String, primary_key=True)
+    item_id = Column(String, primary_key=True)
     state_id = Column(Integer, primary_key=True)
     notes = Column(String)
     userid = Column(String, primary_key=True)
@@ -44,8 +44,8 @@ class StateHistory(Base):
     user_subscription_notification = Column(String)
 
     def __repr__(self):
-        return "<StateHistory (rec_id=%s, state_id=%s, notes=%s, userid=%s, state_action=%s, insert_ts=%s)>" % (
-            self.rec_id, self.state_id, self.notes, self.userid, self.state_action, self.insert_ts
+        return "<StateHistory (item_id=%s, state_id=%s, notes=%s, userid=%s, state_action=%s, insert_ts=%s)>" % (
+            self.item_id, self.state_id, self.notes, self.userid, self.state_action, self.insert_ts
         )
 
 

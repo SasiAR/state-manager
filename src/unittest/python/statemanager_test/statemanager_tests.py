@@ -55,19 +55,19 @@ class TestWorkflowState(unittest.TestCase):
         sm = statemanager_api.StateManager(workflow_type='TASK_RECORD')
 
         def caller():
-            sm.state(rec_id='1')
+            sm.state(item_id='1')
 
         self.assertRaises(NoWorkflowDefined, caller)
 
         sm = statemanager_api.StateManager(workflow_type='TASK_APPROVAL')
-        self.assertEqual(sm.state(rec_id='2'), None)
+        self.assertEqual(sm.state(item_id='2'), None)
 
     def test_workflow_latest(self):
         self._initialize_tables()
         sm = statemanager_api.StateManager(workflow_type='TASK_APPROVAL')
-        sm_output = sm.state(rec_id='1')
+        sm_output = sm.state(item_id='1')
 
-        self.assertEqual(sm_output.rec_id, '1')
+        self.assertEqual(sm_output.item_id, '1')
         self.assertEqual(sm_output.workflow_type, 'TASK_APPROVAL')
         self.assertEqual(sm_output.state_id, 2)
         self.assertEqual(sm_output.state_name, 'VALIDATED')
@@ -81,20 +81,20 @@ class TestWorkflowState(unittest.TestCase):
         sm = statemanager_api.StateManager(workflow_type='TASK_RECORD')
 
         def caller():
-            sm.history(rec_id='1')
+            sm.history(item_id='1')
 
         self.assertRaises(NoWorkflowDefined, caller)
 
         sm = statemanager_api.StateManager(workflow_type='TASK_APPROVAL')
-        sm_output = sm.history(rec_id='2')
+        sm_output = sm.history(item_id='2')
         self.assertEqual(sm_output, None)
 
     def test_workflow_history(self):
         self._initialize_tables()
         sm = statemanager_api.StateManager(workflow_type='TASK_APPROVAL')
-        sm_output = sm.history(rec_id='1')
+        sm_output = sm.history(item_id='1')
 
-        self.assertEqual(sm_output[0].rec_id, '1')
+        self.assertEqual(sm_output[0].item_id, '1')
         self.assertEqual(sm_output[0].workflow_type, 'TASK_APPROVAL')
         self.assertEqual(sm_output[0].state_id, 2)
         self.assertEqual(sm_output[0].state_name, 'VALIDATED')
@@ -103,7 +103,7 @@ class TestWorkflowState(unittest.TestCase):
         self.assertEqual(sm_output[0].state_action, 'APPROVE')
         self.assertEqual(sm_output[0].insert_ts, datetime(2016, 1, 1, 0, 5, 0))
 
-        self.assertEqual(sm_output[1].rec_id, '1')
+        self.assertEqual(sm_output[1].item_id, '1')
         self.assertEqual(sm_output[1].workflow_type, 'TASK_APPROVAL')
         self.assertEqual(sm_output[1].state_id, 1)
         self.assertEqual(sm_output[1].state_name, 'SUBMITTED')

@@ -26,7 +26,7 @@ def _send_notification(msg: MIMEText) -> bool:
     smtp.send_message(msg)
 
 
-def notify_users(workflow_type: str, rec_id: str) -> bool:
+def notify_users(workflow_type: str, item_id: str) -> bool:
     workflow_definition = current_session().query(WorkflowDefinition).filter(
         WorkflowDefinition.workflow_type == workflow_type).first()
 
@@ -34,12 +34,12 @@ def notify_users(workflow_type: str, rec_id: str) -> bool:
         return False
 
     current_state = current_session().query(StateHistory, StateDefinition).filter(and_(
-        and_(StateHistory.rec_id == rec_id, StateDefinition.workflow_id == workflow_definition.workflow_id),
+        and_(StateHistory.item_id == item_id, StateDefinition.workflow_id == workflow_definition.workflow_id),
         StateHistory.state_id == StateDefinition.state_id)).order_by(
         desc(StateHistory.insert_ts)).first()
 
     subscription = current_session().query(StateHistory.user_subscription_notification).filter(
-        and_(StateHistory.rec_id == rec_id), StateHistory.user_subscription_notification != None).all()
+        and_(StateHistory.item_id == item_id), StateHistory.user_subscription_notification != None).all()
 
     cc_users = []
 
@@ -56,7 +56,7 @@ def notify_users(workflow_type: str, rec_id: str) -> bool:
     if not to_users and (cc_users is None or cc_users):
         return False
 
-    subject = workflow_definition.email_subject + "-" + rec_id
+    subject = workflow_definition.email_subject + "-" + item_id
     content = workflow_definition.email_content
     content += " The state was changed to "
     content += current_state.StateDefinition.state_name

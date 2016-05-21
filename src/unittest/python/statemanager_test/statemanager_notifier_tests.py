@@ -56,7 +56,7 @@ class TestWorkflowState(unittest.TestCase):
     def test_notify(self):
         self._initialize_tables()
         sm = statemanager_api.StateManager(workflow_type="TASK_APPROVAL")
-        self.assertFalse(sm.notify_users(rec_id="1"))
+        self.assertFalse(sm.notify_users(item_id="1"))
 
     def test_notify_pass(self):
         def mock_notification(msg: MIMEText):
@@ -71,7 +71,7 @@ class TestWorkflowState(unittest.TestCase):
             ' email_content="content for email."'
             ' where workflow_id = 1')
         sm = statemanager_api.StateManager(workflow_type="TASK_APPROVAL")
-        self.assertTrue(sm.notify_users(rec_id="1"))
+        self.assertTrue(sm.notify_users(item_id="1"))
 
         self.assertEqual(["someone@fromsomewhere.com"], msg_result._headers[4][1])
         self.assertEqual([], msg_result._headers[5][1])
@@ -91,7 +91,7 @@ class TestWorkflowState(unittest.TestCase):
             ' email_content="content for email."'
             ' where workflow_id = 1')
         sm = statemanager_api.StateManager(workflow_type="TASK_APPROVAL")
-        sm.next(rec_id='1', userid='USER3', notes='approved to got the next stage')
+        sm.next(item_id='1', userid='USER3', notes='approved to got the next stage')
 
         self.assertEqual(["someone@fromsomewhere.com"], msg_result._headers[4][1])
         self.assertEqual([], msg_result._headers[5][1])
@@ -112,7 +112,7 @@ class TestWorkflowState(unittest.TestCase):
             ' email_content="content for email."'
             ' where workflow_id = 1')
         sm = statemanager_api.StateManager(workflow_type="TASK_APPROVAL")
-        sm.previous(rec_id='1', userid='USER3', notes='reject the approval request',
+        sm.previous(item_id='1', userid='USER3', notes='reject the approval request',
                     user_subscription_notification='user3@fromsomewhere.com')
 
         self.assertEqual(["someone@fromsomewhere.com"], msg_result._headers[4][1])
@@ -134,7 +134,7 @@ class TestWorkflowState(unittest.TestCase):
             ' email_content="content for email."'
             ' where workflow_id = 1')
         sm = statemanager_api.StateManager(workflow_type="TASK_APPROVAL")
-        sm.next(rec_id='1', userid='USER3', notes='approved to got the next stage',
+        sm.next(item_id='1', userid='USER3', notes='approved to got the next stage',
                 user_subscription_notification='user3@fromsomewhere.com')
         self.assertEqual(["someone@fromsomewhere.com"], msg_result._headers[4][1])
         self.assertEqual(["user3@fromsomewhere.com"], msg_result._headers[5][1])
@@ -142,7 +142,7 @@ class TestWorkflowState(unittest.TestCase):
                          "The state was changed to APPROVED with notes - approved to got the next stage",
                          msg_result._payload)
 
-        sm.next(rec_id='1', userid='USER4', notes='approved to got the next stage',
+        sm.next(item_id='1', userid='USER4', notes='approved to got the next stage',
                 user_subscription_notification='user4@fromsomewhere.com')
 
         self.assertEqual(["someone@fromsomewhere.com"], msg_result._headers[4][1])
@@ -164,7 +164,7 @@ class TestWorkflowState(unittest.TestCase):
             ' email_content="content for email."'
             ' where workflow_id = 1')
         sm = statemanager_api.StateManager(workflow_type="TASK_APPROVAL")
-        sm.next(rec_id='1', userid='USER3', notes='approved to got the next stage',
+        sm.next(item_id='1', userid='USER3', notes='approved to got the next stage',
                 user_subscription_notification='user3@fromsomewhere.com')
         self.assertEqual(["someone@fromsomewhere.com"], msg_result._headers[4][1])
         self.assertEqual(["user3@fromsomewhere.com"], msg_result._headers[5][1])
@@ -172,7 +172,7 @@ class TestWorkflowState(unittest.TestCase):
                          "The state was changed to APPROVED with notes - approved to got the next stage",
                          msg_result._payload)
 
-        sm.next(rec_id='1', userid='USER3', notes='approved to got the next stage',
+        sm.next(item_id='1', userid='USER3', notes='approved to got the next stage',
                 user_subscription_notification='user3@fromsomewhere.com')
 
         self.assertEqual(["someone@fromsomewhere.com"], msg_result._headers[4][1])
