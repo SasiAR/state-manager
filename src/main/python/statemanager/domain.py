@@ -66,3 +66,18 @@ class WorkflowDefinition(Base):
                                                         self.email_subject,
                                                         self.email_content
                                                         )
+
+
+class ItemVersion(Base):
+    __tablename__ = 'SM_VERSION'
+
+    item_type = Column(String, primary_key=True)
+    item_id = Column(String)
+    version_number = Column(Integer, primary_key=True)
+    created_ts = Column(DateTime)
+
+    def __repr__(self):
+        return "<Version(item_type=%s, item_id=%s, version_number=%s, created_ts=%s" % (self.item_type,
+                                                                                        self.item_id,
+                                                                                        self.version_number,
+                                                                                        self.created_ts)

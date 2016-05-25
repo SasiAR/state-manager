@@ -60,10 +60,10 @@ class TestWorkflowState(unittest.TestCase):
         self.assertEqual(sm_output.state_action, "APPROVE")
         self.assertEqual(sm_output.notes, 'approved to got the next stage')
 
-    def test_initial(self):
+    def test_addl(self):
         self._initialize_tables()
         sm = api.StateManager(workflow_type='TASK_APPROVAL')
-        sm_output = sm.moveup(item_id='2', userid='USER3', notes='submit my task for initial state')
+        sm_output = sm.add(item_id='2', userid='USER3', notes='submit my task for initial state')
         self.assertEqual(sm_output.item_id, '2')
         self.assertEqual(sm_output.workflow_type, 'TASK_APPROVAL')
         self.assertEqual(sm_output.state_id, 1)
@@ -71,10 +71,10 @@ class TestWorkflowState(unittest.TestCase):
         self.assertEqual(sm_output.state_action, "INITIAL")
         self.assertEqual(sm_output.notes, 'submit my task for initial state')
 
-    def test_initial_and_moveup(self):
+    def test_add_and_moveup(self):
         self._initialize_tables()
         sm = api.StateManager(workflow_type='TASK_APPROVAL')
-        sm_output = sm.moveup(item_id='2', userid='USER3', notes='submit my task for initial state')
+        sm_output = sm.add(item_id='2', userid='USER3', notes='submit my task for initial state')
         self.assertEqual(sm_output.item_id, '2')
         self.assertEqual(sm_output.workflow_type, 'TASK_APPROVAL')
         self.assertEqual(sm_output.state_id, 1)

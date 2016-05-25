@@ -1,9 +1,9 @@
 from sqlalchemy.orm import sessionmaker
 from statemanager import statemanager
-from statemanager import notifier, dao
+from statemanager import notifier, dao, version
 
 
-def initialize(sm: sessionmaker, mailhost: str=None) -> None:
+def initialize(sm: sessionmaker, mailhost: str = None) -> None:
     dao.set_session_factory(sm)
     notifier.set_smtphost(mailhost)
 
@@ -18,8 +18,20 @@ class StateManager:
     def history(self, item_id: str) -> [statemanager.StateManagerOutput]:
         return statemanager.get_history(self.workflow_type, item_id)
 
+    def add(self, item_id: str, userid: str, notes: str, criteria: str = None,
+            user_subscription_notification: str = None, item_type: str = None) -> statemanager.StateManagerOutput:
+        return self.moveup(item_id=item_id,
+                           userid=userid,
+                           notes=notes,
+                           criteria=criteria,
+                           user_subscription_notification=user_subscription_notification,
+                           item_type=item_type)
+
     def moveup(self, item_id: str, userid: str, notes: str, criteria: str = None,
-               user_subscription_notification: str = None) -> statemanager.StateManagerOutput:
+               user_subscription_notification: str = None, item_type: str = None) -> statemanager.StateManagerOutput:
+        if item_type is not None:
+            version.add_to_version(item_type=item_type, item_id=item_id)
+
         output = statemanager.moveup(self.workflow_type, item_id=item_id, userid=userid, notes=notes,
                                      criteria=criteria,
                                      user_subscription_notification=user_subscription_notification)

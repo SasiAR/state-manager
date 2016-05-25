@@ -180,7 +180,6 @@ def moveup(workflow_type: str, item_id: str, criteria: str, userid: str, notes: 
                                  user_subscription_notification=user_subscription_notification,
                                  insert_ts=datetime.now()))
     session.flush()
-    session.commit()
     return get_state(workflow_type=workflow_type, item_id=item_id)
 
 
@@ -219,5 +218,4 @@ def sendback(workflow_type: str, item_id: str, userid: str, notes: str,
                              user_subscription_notification=user_subscription_notification,
                              insert_ts=datetime.now()))
     session.flush()
-    session.commit()
     return get_state(workflow_type=workflow_type, item_id=item_id)
