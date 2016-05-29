@@ -1,4 +1,5 @@
 from pybuilder.core import use_plugin, init
+import os
 
 use_plugin("python.core")
 use_plugin("python.unittest")
@@ -22,4 +23,4 @@ def set_properties(project):
     project.set_property('version', '0.0.1')
     project.set_property('dir_dist', '$dir_target/dist/$name-$version')
     project.set_property('flake8_break_build', False)
-    project.set_property('sphinx_output_dir', '$dir_target/reports/docs')
+    project.set_property('sphinx_source_dir', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'docs'))

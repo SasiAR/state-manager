@@ -44,10 +44,10 @@ class TestWorkflowState(unittest.TestCase):
         self.connection.execute('insert into SM_WORKFLOW_STATE values(4,null)')
 
         self.connection.execute(
-            'insert into SM_STATE_HISTORY values("1", 1, "submitted for approval", "USER1", '
+            'insert into SM_STATE_HISTORY values("TASKS", "1", 1, "submitted for approval", "USER1", '
             '"INITIAL", null, "2016-01-01 00:00:00")')
         self.connection.execute(
-            'insert into SM_STATE_HISTORY values("1", 2, "validated task", "USER2", '
+            'insert into SM_STATE_HISTORY values("TASKS", "1", 2, "validated task", "USER2", '
             '"APPROVE" , null, "2016-01-01 00:05:00")')
 
     def test_workflow_latest_empty(self):
@@ -55,17 +55,17 @@ class TestWorkflowState(unittest.TestCase):
         sm = api.StateManager(workflow_type='TASK_RECORD')
 
         def caller():
-            sm.state(item_id='1')
+            sm.state(item_type='TASKS', item_id='1')
 
         self.assertRaises(NoWorkflowDefined, caller)
 
         sm = api.StateManager(workflow_type='TASK_APPROVAL')
-        self.assertEqual(sm.state(item_id='2'), None)
+        self.assertEqual(sm.state(item_type='TASKS', item_id='2'), None)
 
     def test_workflow_latest(self):
         self._initialize_tables()
         sm = api.StateManager(workflow_type='TASK_APPROVAL')
-        sm_output = sm.state(item_id='1')
+        sm_output = sm.state(item_type='TASKS', item_id='1')
 
         self.assertEqual(sm_output.item_id, '1')
         self.assertEqual(sm_output.workflow_type, 'TASK_APPROVAL')
@@ -81,18 +81,18 @@ class TestWorkflowState(unittest.TestCase):
         sm = api.StateManager(workflow_type='TASK_RECORD')
 
         def caller():
-            sm.history(item_id='1')
+            sm.history(item_type='TASKS', item_id='1')
 
         self.assertRaises(NoWorkflowDefined, caller)
 
         sm = api.StateManager(workflow_type='TASK_APPROVAL')
-        sm_output = sm.history(item_id='2')
+        sm_output = sm.history(item_type='TASKS', item_id='2')
         self.assertEqual(sm_output, None)
 
     def test_workflow_history(self):
         self._initialize_tables()
         sm = api.StateManager(workflow_type='TASK_APPROVAL')
-        sm_output = sm.history(item_id='1')
+        sm_output = sm.history(item_type='TASKS', item_id='1')
 
         self.assertEqual(sm_output[0].item_id, '1')
         self.assertEqual(sm_output[0].workflow_type, 'TASK_APPROVAL')

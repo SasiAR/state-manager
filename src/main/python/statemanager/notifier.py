@@ -26,20 +26,21 @@ def _send_notification(msg: MIMEText) -> bool:
     smtp.send_message(msg)
 
 
-def notify_users(workflow_type: str, item_id: str) -> bool:
+def notify_users(workflow_type: str, item_type: str, item_id: str) -> bool:
     workflow_definition = current_session().query(WorkflowDefinition).filter(
         WorkflowDefinition.workflow_type == workflow_type).first()
 
     if workflow_definition.email_notification.lower() == 'n':
         return False
 
-    current_state = current_session().query(StateHistory, StateDefinition).filter(and_(
+    current_state = current_session().query(StateHistory, StateDefinition).filter(and_(and_(
         and_(StateHistory.item_id == item_id, StateDefinition.workflow_id == workflow_definition.workflow_id),
-        StateHistory.state_id == StateDefinition.state_id)).order_by(
+        StateHistory.state_id == StateDefinition.state_id), StateHistory.item_type == item_type)).order_by(
         desc(StateHistory.insert_ts)).first()
 
-    subscription = current_session().query(StateHistory.user_subscription_notification).filter(
-        and_(StateHistory.item_id == item_id), StateHistory.user_subscription_notification != None).all()
+    subscription = current_session().query(StateHistory.user_subscription_notification).filter(and_(
+        and_(StateHistory.item_id == item_id, StateHistory.user_subscription_notification != None),
+        StateHistory.item_type == item_type)).all()
 
     cc_users = []
 
