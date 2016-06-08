@@ -28,18 +28,18 @@ class TestWorkflowState(unittest.TestCase):
         self.connection.execute(
             'insert into SM_WORKFLOW_DEFINITION values(1,"TASK_APPROVAL", "N", null, null)')
         self.connection.execute(
-            'insert into SM_STATE_DEFINITION values(1,1, "SUBMITTED", null, null)')
+            'insert into SM_STATE_DEFINITION values(1,1, "SUBMITTED", null)')
         self.connection.execute(
-            'insert into SM_STATE_DEFINITION values(2,1, "VALIDATED", null, null)')
+            'insert into SM_STATE_DEFINITION values(2,1, "VALIDATED", null)')
         self.connection.execute(
-            'insert into SM_STATE_DEFINITION values(3,1, "APPROVED", null, null)')
+            'insert into SM_STATE_DEFINITION values(3,1, "APPROVED", null)')
         self.connection.execute(
-            'insert into SM_STATE_DEFINITION values(4,1, "COMPLETED",null, null)')
+            'insert into SM_STATE_DEFINITION values(4,1, "COMPLETED", null)')
 
-        self.connection.execute('insert into SM_WORKFLOW_STATE values(1,2)')
-        self.connection.execute('insert into SM_WORKFLOW_STATE values(2,3)')
-        self.connection.execute('insert into SM_WORKFLOW_STATE values(3,4)')
-        self.connection.execute('insert into SM_WORKFLOW_STATE values(4,null)')
+        self.connection.execute('insert into SM_WORKFLOW_STATE values(1,2,null)')
+        self.connection.execute('insert into SM_WORKFLOW_STATE values(2,3,null)')
+        self.connection.execute('insert into SM_WORKFLOW_STATE values(3,4,null)')
+        self.connection.execute('insert into SM_WORKFLOW_STATE values(4,null,null)')
 
     def test_version_no_add(self):
         self._initialize_tables()
@@ -73,7 +73,7 @@ class TestWorkflowState(unittest.TestCase):
         self._initialize_tables()
         sm = api.StateManager(workflow_type='TASK_APPROVAL')
         sm.add_with_version(item_id='1', userid='USER1', notes='approved to got the next stage', item_type='TASKS')
-        sm.moveup(item_id='1', userid='USER1', notes='approved to got the next stage', item_type='TASKS')
+        sm.next_state(item_id='1', userid='USER1', notes='approved to got the next stage', item_type='TASKS')
         sm.add_with_version(item_id='2', userid='USER1', notes='approved to got the next stage', item_type='TASKS')
         result = self.connection.execute('select * from sm_version').fetchall()
         self.assertEqual(2, len(result))

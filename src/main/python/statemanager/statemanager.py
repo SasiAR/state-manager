@@ -24,7 +24,7 @@ class StateManagerOutput:
     _insert_ts = None
 
     def __init__(self, item_type, item_id, workflow_type, state_id, state_name, notes, userid, state_action, insert_ts):
-        self._item_id = item_type
+        self._item_type = item_type
         self._item_id = item_id
         self._workflow_type = workflow_type
         self._state_id = state_id
@@ -137,8 +137,8 @@ def get_history(workflow_type: str, item_type: str, item_id: str) -> [StateManag
     return all_records
 
 
-def moveup(workflow_type: str, item_type: str, item_id: str, criteria: str, userid: str, notes: str,
-           user_subscription_notification: str) -> StateManagerOutput:
+def next_state(workflow_type: str, item_type: str, item_id: str, action: str, userid: str, notes: str,
+               user_subscription_notification: str) -> StateManagerOutput:
     workflow_definition = _get_workflow_definition(workflow_type)
     current_state = get_state(workflow_type, item_type, item_id)
     session = current_session()
@@ -174,9 +174,12 @@ def moveup(workflow_type: str, item_type: str, item_id: str, criteria: str, user
             raise NextStateNotDefinedError()
 
         next_state_definition = next_state_definitions[0]
-        if criteria is not None and next_state_definitions:
-            next_state_definition = next(iter(
-                [state for state in next_state_definitions if state.StateDefinition.criteria == criteria]))
+        if action is not None:
+            next_state_definition = session.query(StateDefinition, WorkflowState).filter(
+                and_(StateDefinition.state_id == WorkflowState.state_id,
+                     and_(StateDefinition.state_id.in_(session.query(WorkflowState.next_state_id).filter(
+                         and_(WorkflowState.state_id == current_state.state_id, WorkflowState.action == action))),
+                         StateDefinition.workflow_id == workflow_definition.workflow_id))).first()
 
         if next_state_definition is None:
             raise NextStateNotDefinedError()
@@ -193,8 +196,8 @@ def moveup(workflow_type: str, item_type: str, item_id: str, criteria: str, user
     return get_state(workflow_type=workflow_type, item_type=item_type, item_id=item_id)
 
 
-def sendback(workflow_type: str, item_type: str, item_id: str, userid: str, notes: str,
-             user_subscription_notification: str) -> StateManagerOutput:
+def previous_state(workflow_type: str, item_type: str, item_id: str, userid: str, notes: str,
+                   user_subscription_notification: str) -> StateManagerOutput:
     workflow_definition = _get_workflow_definition(workflow_type)
     current_state = get_state(workflow_type, item_type, item_id)
 

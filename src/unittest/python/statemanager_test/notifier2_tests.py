@@ -53,75 +53,7 @@ class TestWorkflowNotification(unittest.TestCase):
             'insert into SM_STATE_HISTORY values("TASKS", "1", 2, "validated task", "USER2", '
             '"APPROVE", null, "2016-01-01 00:05:00")')
 
-    def test_notify(self):
-        self._initialize_tables()
-        sm = api.StateManager(workflow_type="TASK_APPROVAL")
-        self.assertFalse(sm.notify_users(item_type='TASKS', item_id="1"))
-
-    def test_notify_pass(self):
-        def mock_notification(msg: MIMEText):
-            global msg_result
-            msg_result = msg
-
-        notifier._send_notification = mock_notification
-        self._initialize_tables()
-        self.connection.execute(
-            'update SM_WORKFLOW_DEFINITION set email_notification="Y", '
-            ' email_subject="subject for notification",'
-            ' email_content="content for email."'
-            ' where workflow_id = 1')
-        sm = api.StateManager(workflow_type="TASK_APPROVAL")
-        self.assertTrue(sm.notify_users(item_type='TASKS', item_id="1"))
-
-        self.assertEqual(["someone@fromsomewhere.com"], msg_result._headers[4][1])
-        self.assertEqual([], msg_result._headers[5][1])
-        self.assertEqual("content for email. The state was changed to VALIDATED with notes - validated task",
-                         msg_result._payload)
-
-    def test_notify_pass_sendback(self):
-        def mock_notification(msg: MIMEText):
-            global msg_result
-            msg_result = msg
-
-        notifier._send_notification = mock_notification
-        self._initialize_tables()
-        self.connection.execute(
-            'update SM_WORKFLOW_DEFINITION set email_notification="Y", '
-            ' email_subject="subject for notification",'
-            ' email_content="content for email."'
-            ' where workflow_id = 1')
-        sm = api.StateManager(workflow_type="TASK_APPROVAL")
-        sm.next_state(item_type="TASKS", item_id='1', userid='USER3', notes='approved to got the next stage')
-
-        self.assertEqual(["someone@fromsomewhere.com"], msg_result._headers[4][1])
-        self.assertEqual([], msg_result._headers[5][1])
-        self.assertEqual("content for email. "
-                         "The state was changed to APPROVED with notes - approved to got the next stage",
-                         msg_result._payload)
-
-    def test_notify_pass_sendback_subsription(self):
-        def mock_notification(msg: MIMEText):
-            global msg_result
-            msg_result = msg
-
-        notifier._send_notification = mock_notification
-        self._initialize_tables()
-        self.connection.execute(
-            'update SM_WORKFLOW_DEFINITION set email_notification="Y", '
-            ' email_subject="subject for notification",'
-            ' email_content="content for email."'
-            ' where workflow_id = 1')
-        sm = api.StateManager(workflow_type="TASK_APPROVAL")
-        sm.previous_state(item_type="TASKS", item_id='1', userid='USER3', notes='reject the approval request',
-                          user_subscription_notification='user3@fromsomewhere.com')
-
-        self.assertEqual(["someone@fromsomewhere.com"], msg_result._headers[4][1])
-        self.assertEqual(["user3@fromsomewhere.com"], msg_result._headers[5][1])
-        self.assertEqual("content for email. "
-                         "The state was changed to SUBMITTED with notes - reject the approval request",
-                         msg_result._payload)
-
-    def test_notify_pass_moveup_subscription(self):
+    def test_notify_pass_moveup_nultiple_subscription(self):
         def mock_notification(msg: MIMEText):
             global msg_result
             msg_result = msg
@@ -142,11 +74,10 @@ class TestWorkflowNotification(unittest.TestCase):
                          "The state was changed to APPROVED with notes - approved to got the next stage",
                          msg_result._payload)
 
-        sm.next_state(item_type="TASKS", item_id='1', userid='USER4', notes='approved to got the next stage',
-                      user_subscription_notification='user4@fromsomewhere.com')
-
+        sm.next_state(item_type="TASKS", item_id='1', userid='USER3', notes='approved to got the next stage',
+                      user_subscription_notification='user3@fromsomewhere.com')
         self.assertEqual(["someone@fromsomewhere.com"], msg_result._headers[4][1])
-        self.assertEqual(["user3@fromsomewhere.com", "user4@fromsomewhere.com"], msg_result._headers[5][1])
+        self.assertEqual(["user3@fromsomewhere.com"], msg_result._headers[5][1])
         self.assertEqual("content for email. "
                          "The state was changed to COMPLETED with notes - approved to got the next stage",
                          msg_result._payload)

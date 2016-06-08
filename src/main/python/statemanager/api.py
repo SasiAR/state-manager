@@ -18,39 +18,39 @@ class StateManager:
     def history(self, item_type: str, item_id: str) -> [statemanager.StateManagerOutput]:
         return statemanager.get_history(self.workflow_type, item_type, item_id)
 
-    def add(self, item_id: str, userid: str, notes: str, item_type: str, criteria: str = None,
+    def add(self, item_id: str, userid: str, notes: str, item_type: str, action: str = None,
             user_subscription_notification: str = None) -> statemanager.StateManagerOutput:
-        return self.moveup(item_id=item_id,
-                           userid=userid,
-                           notes=notes,
-                           criteria=criteria,
-                           user_subscription_notification=user_subscription_notification,
-                           item_type=item_type)
+        return self.next_state(item_id=item_id,
+                               userid=userid,
+                               notes=notes,
+                               action=action,
+                               user_subscription_notification=user_subscription_notification,
+                               item_type=item_type)
 
-    def add_with_version(self, item_id: str, userid: str, notes: str, item_type: str, criteria: str = None,
+    def add_with_version(self, item_id: str, userid: str, notes: str, item_type: str, action: str = None,
                          user_subscription_notification: str = None) -> statemanager.StateManagerOutput:
         version.add_to_version(item_type=item_type, item_id=item_id)
 
-        return self.moveup(item_id=item_id,
-                           userid=userid,
-                           notes=notes,
-                           criteria=criteria,
-                           user_subscription_notification=user_subscription_notification,
-                           item_type=item_type)
+        return self.next_state(item_id=item_id,
+                               userid=userid,
+                               notes=notes,
+                               action=action,
+                               user_subscription_notification=user_subscription_notification,
+                               item_type=item_type)
 
-    def moveup(self, item_id: str, userid: str, notes: str, item_type: str, criteria: str = None,
-               user_subscription_notification: str = None) -> statemanager.StateManagerOutput:
-        output = statemanager.moveup(self.workflow_type, item_id=item_id, userid=userid, notes=notes,
-                                     criteria=criteria, item_type=item_type,
-                                     user_subscription_notification=user_subscription_notification)
+    def next_state(self, item_id: str, userid: str, notes: str, item_type: str, action: str = None,
+                   user_subscription_notification: str = None) -> statemanager.StateManagerOutput:
+        output = statemanager.next_state(self.workflow_type, item_id=item_id, userid=userid, notes=notes,
+                                         action=action, item_type=item_type,
+                                         user_subscription_notification=user_subscription_notification)
         self.notify_users(item_type=item_type, item_id=item_id)
         return output
 
-    def sendback(self, item_type: str, item_id: str, userid: str, notes: str,
-                 user_subscription_notification: str = None) -> statemanager.StateManagerOutput:
-        output = statemanager.sendback(self.workflow_type, item_type=item_type, item_id=item_id,
-                                       userid=userid, notes=notes,
-                                       user_subscription_notification=user_subscription_notification)
+    def previous_state(self, item_type: str, item_id: str, userid: str, notes: str,
+                       user_subscription_notification: str = None) -> statemanager.StateManagerOutput:
+        output = statemanager.previous_state(self.workflow_type, item_type=item_type, item_id=item_id,
+                                             userid=userid, notes=notes,
+                                             user_subscription_notification=user_subscription_notification)
         self.notify_users(item_type=item_type, item_id=item_id)
         return output
 

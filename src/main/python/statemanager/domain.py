@@ -10,16 +10,14 @@ class StateDefinition(Base):
     state_id = Column(Integer, primary_key=True)
     workflow_id = Column(Integer)
     state_name = Column(String)
-    criteria = Column(String)
     email_to = Column(String)
 
     def __repr__(self):
         return "<StateDefinition (state_id=%s, workflow_id=%s, state_name=%s, " \
-               "email_to=%s, criteria=%s)>" % (self.state_id,
-                                               self.workflow_id,
-                                               self.state_name,
-                                               self.criteria,
-                                               self.email_to)
+               "email_to=%s)>" % (self.state_id,
+                                  self.workflow_id,
+                                  self.state_name,
+                                  self.email_to)
 
 
 class WorkflowState(Base):
@@ -27,9 +25,11 @@ class WorkflowState(Base):
 
     state_id = Column(Integer, primary_key=True)
     next_state_id = Column(Integer, primary_key=True)
+    action = Column(String)
 
     def __repr__(self):
-        return "<StateWorkflow(state_id=%s, next_state_id=%s)>" % (self.state_id, self.next_state_id)
+        return "<StateWorkflow(state_id=%s, next_state_id=%s, action=%s)>" % (
+        self.state_id, self.next_state_id, self.action)
 
 
 class StateHistory(Base):

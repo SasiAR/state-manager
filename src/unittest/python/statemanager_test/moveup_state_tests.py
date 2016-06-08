@@ -29,18 +29,18 @@ class TestWorkflowState(unittest.TestCase):
         self.connection.execute(
             'insert into SM_WORKFLOW_DEFINITION values(1,"TASK_APPROVAL", "N", null, null)')
         self.connection.execute(
-            'insert into SM_STATE_DEFINITION values(1,1, "SUBMITTED", null, null)')
+            'insert into SM_STATE_DEFINITION values(1,1, "SUBMITTED", null)')
         self.connection.execute(
-            'insert into SM_STATE_DEFINITION values(2,1, "VALIDATED", null, null)')
+            'insert into SM_STATE_DEFINITION values(2,1, "VALIDATED", null)')
         self.connection.execute(
-            'insert into SM_STATE_DEFINITION values(3,1, "APPROVED", null, null)')
+            'insert into SM_STATE_DEFINITION values(3,1, "APPROVED", null)')
         self.connection.execute(
-            'insert into SM_STATE_DEFINITION values(4,1, "COMPLETED",null, null)')
+            'insert into SM_STATE_DEFINITION values(4,1, "COMPLETED", null)')
 
-        self.connection.execute('insert into SM_WORKFLOW_STATE values(1,2)')
-        self.connection.execute('insert into SM_WORKFLOW_STATE values(2,3)')
-        self.connection.execute('insert into SM_WORKFLOW_STATE values(3,4)')
-        self.connection.execute('insert into SM_WORKFLOW_STATE values(4,null)')
+        self.connection.execute('insert into SM_WORKFLOW_STATE values(1,2, null)')
+        self.connection.execute('insert into SM_WORKFLOW_STATE values(2,3, null)')
+        self.connection.execute('insert into SM_WORKFLOW_STATE values(3,4, null)')
+        self.connection.execute('insert into SM_WORKFLOW_STATE values(4,null, null)')
 
         self.connection.execute(
             'insert into SM_STATE_HISTORY values("TASKS", "1", 1, "submitted for approval", "USER1", '
@@ -52,7 +52,7 @@ class TestWorkflowState(unittest.TestCase):
     def test_moveup_state(self):
         self._initialize_tables()
         sm = api.StateManager(workflow_type='TASK_APPROVAL')
-        sm_output = sm.moveup(item_type="TASKS", item_id='1', userid='USER3', notes='approved to got the next stage')
+        sm_output = sm.next_state(item_type="TASKS", item_id='1', userid='USER3', notes='approved to got the next stage')
         self.assertEqual(sm_output.item_id, '1')
         self.assertEqual(sm_output.workflow_type, 'TASK_APPROVAL')
         self.assertEqual(sm_output.state_id, 3)
@@ -81,7 +81,7 @@ class TestWorkflowState(unittest.TestCase):
         self.assertEqual(sm_output.state_name, 'SUBMITTED')
         self.assertEqual(sm_output.state_action, "INITIAL")
         self.assertEqual(sm_output.notes, 'submit my task for initial state')
-        sm_output = sm.moveup(item_type="TASKS", item_id='2', userid='USER4', notes='validate task')
+        sm_output = sm.next_state(item_type="TASKS", item_id='2', userid='USER4', notes='validate task')
         self.assertEqual(sm_output.item_id, '2')
         self.assertEqual(sm_output.workflow_type, 'TASK_APPROVAL')
         self.assertEqual(sm_output.state_id, 2)
@@ -94,18 +94,18 @@ class TestWorkflowState(unittest.TestCase):
         sm = api.StateManager(workflow_type='TASK_MANAGE')
 
         def caller():
-            sm.moveup(item_type="TASKS", item_id='3', userid='USER3', notes='submit my task for initial state')
+            sm.next_state(item_type="TASKS", item_id='3', userid='USER3', notes='submit my task for initial state')
 
         self.assertRaises(NoWorkflowDefined, caller)
 
     def test_final_state(self):
         self._initialize_tables()
         sm = api.StateManager(workflow_type='TASK_APPROVAL')
-        sm.moveup(item_type="TASKS", item_id='1', userid='USER3', notes='approved to got the next stage')
-        sm.moveup(item_type="TASKS", item_id='1', userid='USER3', notes='approved to got the next stage')
+        sm.next_state(item_type="TASKS", item_id='1', userid='USER3', notes='approved to got the next stage')
+        sm.next_state(item_type="TASKS", item_id='1', userid='USER3', notes='approved to got the next stage')
 
         def caller():
-            sm.moveup(item_type="TASKS", item_id='1', userid='USER3', notes='approved to got the next stage')
+            sm.next_state(item_type="TASKS", item_id='1', userid='USER3', notes='approved to got the next stage')
 
         self.assertRaises(NextStateNotDefinedError, caller)
 

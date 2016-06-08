@@ -30,18 +30,18 @@ class TestWorkflowState(unittest.TestCase):
             'insert into SM_WORKFLOW_DEFINITION values(1,"TASK_APPROVAL", "N", null, null)'
         )
         self.connection.execute(
-            'insert into SM_STATE_DEFINITION values(1,1, "SUBMITTED",null, null)')
+            'insert into SM_STATE_DEFINITION values(1,1, "SUBMITTED", null)')
         self.connection.execute(
-            'insert into SM_STATE_DEFINITION values(2,1, "VALIDATED",null, null)')
+            'insert into SM_STATE_DEFINITION values(2,1, "VALIDATED", null)')
         self.connection.execute(
-            'insert into SM_STATE_DEFINITION values(3,1, "APPROVED",null, null)')
+            'insert into SM_STATE_DEFINITION values(3,1, "APPROVED", null)')
         self.connection.execute(
-            'insert into SM_STATE_DEFINITION values(4,1, "COMPLETED",null, null)')
+            'insert into SM_STATE_DEFINITION values(4,1, "COMPLETED", null)')
 
-        self.connection.execute('insert into SM_WORKFLOW_STATE values(1,2)')
-        self.connection.execute('insert into SM_WORKFLOW_STATE values(2,3)')
-        self.connection.execute('insert into SM_WORKFLOW_STATE values(3,4)')
-        self.connection.execute('insert into SM_WORKFLOW_STATE values(4,null)')
+        self.connection.execute('insert into SM_WORKFLOW_STATE values(1,2,null)')
+        self.connection.execute('insert into SM_WORKFLOW_STATE values(2,3,null)')
+        self.connection.execute('insert into SM_WORKFLOW_STATE values(3,4,null)')
+        self.connection.execute('insert into SM_WORKFLOW_STATE values(4,null,null)')
 
         self.connection.execute(
             'insert into SM_STATE_HISTORY values("TASKS", "1", 1, "submitted for approval", "USER1", '
@@ -94,6 +94,7 @@ class TestWorkflowState(unittest.TestCase):
         sm = api.StateManager(workflow_type='TASK_APPROVAL')
         sm_output = sm.history(item_type='TASKS', item_id='1')
 
+        self.assertEqual(sm_output[0].item_type, 'TASKS')
         self.assertEqual(sm_output[0].item_id, '1')
         self.assertEqual(sm_output[0].workflow_type, 'TASK_APPROVAL')
         self.assertEqual(sm_output[0].state_id, 2)
@@ -103,6 +104,7 @@ class TestWorkflowState(unittest.TestCase):
         self.assertEqual(sm_output[0].state_action, 'APPROVE')
         self.assertEqual(sm_output[0].insert_ts, datetime(2016, 1, 1, 0, 5, 0))
 
+        self.assertEqual(sm_output[0].item_type, 'TASKS')
         self.assertEqual(sm_output[1].item_id, '1')
         self.assertEqual(sm_output[1].workflow_type, 'TASK_APPROVAL')
         self.assertEqual(sm_output[1].state_id, 1)
